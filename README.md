@@ -26,7 +26,7 @@ To resume :
   
     $G = new phpGraph();
     
-    $G->draw($data);
+    echo $G->draw($data);
     ?>
   
 Options available :
