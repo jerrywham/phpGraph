@@ -126,12 +126,12 @@ class phpGraph {
 				$max = max($data);
 			}
 			$stepX = $width / ($lenght - 1);
-			$unitY = ($height/abs($max-$min));
+			$unitY = ($height/abs(($max+$steps)-$min));
 			$gridV = $gridH = '';
 			$x = $y = '';
 
 			//Size of canevas will be bigger than grid size to display legends
-			$return .= "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="'.($lenght*$stepX+$stepX).'" height="'.($height+$heightLegends+$titleHeight+$paddingTop).'">'."\n";
+			$return .= "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="70%" height="70%" viewBox="0 0 '.($lenght*$stepX+$stepX).' '.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop).'">'."\n";
 			if (is_array($gradient)) {
 				$id = 'BackgroundGradient'.rand();
 				$return .= "\n\t".'<defs>';
@@ -167,7 +167,7 @@ class phpGraph {
 			if ($min>0 || ($min<0 && $max<0)) {
 				$min = 0;
 			}
-			for ($i=$min; $i < $max; $i+=$steps) {
+			for ($i=$min; $i <= ($max+$steps); $i+=$steps) {
 	 			//1 graduation every $steps units
 	 			if ($min<0) {
 	 				$stepY = $HEIGHT + $unitY*($min-$i);
@@ -175,7 +175,7 @@ class phpGraph {
 	 				$stepY = $HEIGHT - ($unitY*$i);
 	 			}
 	 				
-	 			$y .= "\t\t".'<text x="40" y="'.$stepY.'" text-anchor="end" baseline-shift="-1ex">'.($i).'</text>'."\n";
+	 			$y .= "\t\t".'<text x="40" y="'.$stepY.'" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle">'.($i).'</text>'."\n";
 
 				//Horizontal grid
 				$gridH .= "\t\t".'<path d="M 50 '.$stepY.' H '.($width+50).'"/>'."\n" ;
@@ -410,11 +410,15 @@ class phpGraph {
 				//Line
 				if ($i == 0) {
 					$path .= 'M '.($i * $stepX + 50).' '.($titleHeight + 2 * $paddingTop).' L';
+					//Tooltips and circles
+					$c .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($titleHeight + 2 * $paddingTop).'" r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 				} else {
-					$path .= "\n\t\t\t\t".($i * $stepX + 50).' '.($titleHeight + 2 * $paddingTop);
+					//$path .= "\n\t\t\t\t".($i * $stepX + 50).' '.($titleHeight + 2 * $paddingTop);
+					$path .= "\n\t\t\t\t".$coordonnees1;
+					//Tooltips and circles
+					$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees2).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 				}
-				//Tooltips and circles
-				$c .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($titleHeight + 2 * $paddingTop).'" r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+				
 			}
 			$i++;
 			//End tooltips
@@ -492,7 +496,7 @@ class phpGraph {
 			$coordonnees5 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($paddingTop + $titleHeight + ($max-$value) * $unitY + $stepY).'"';
 			$coordonnees6 = 'x="'.($i * $stepX + 50).'" y="'.($paddingTop + $titleHeight + ($max-$value) * $unitY + $stepY).'"';
 			//$min>=0 et $value == $max
-			$coordonnees7 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($paddingTop + $titleHeight).'"';
+			$coordonnees7 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($HEIGHT - $stepY).'"';
 			$coordonnees8 = 'x="'.($i * $stepX + 50).'" y="'.($paddingTop + $titleHeight).'"';
 			//$value == 0
 			$coordonnees9 = 'x="50" y="'.($paddingTop + $titleHeight + ($max) * $unitY).'"';
@@ -538,13 +542,12 @@ class phpGraph {
 					if ($min>=0) {
 						//Si on n'est pas sur la dernière valeur
 						if ($i != $lenght-1) {
-							$bar .= "\n\t".'<rect '.$coordonnees7.' width="'.$stepX.'" height="'.$height.'" class="graph-bar" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>';
+							$bar .= "\n\t".'<rect '.$coordonnees2.' width="'.$stepX.'" height="'.$stepY.'" class="graph-bar" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>';
+							
 						} else {
 							$bar .= "\n\t".'<rect '.$coordonnees7.' width="'.($stepX/2).'" height="'.$height.'" class="graph-bar" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>';
 						}
-						
-						$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees8).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
-						
+						$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees1).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 					} else {
 						if ($value >= 0) {
 							//Si on n'est pas sur la dernière valeur
@@ -727,7 +730,7 @@ class phpGraph {
 		$return .= "\n\t\t\t".'<circle cx="'.$originX.'" cy="'.($originY+2*$radius).'" r="'.$radius.'" fill="'.$deg[$lenght-1]['stroke'].'" class="graph-pie"/>'."\n\t\t\t";
 
 		if ($deg[0]['val'] != 0 && $diskLegends == true) {
-			$return .= "\n\t\t\t".'<path d=" M '.$originX.' '.($originY+2*$radius).' L '.$originX.' '.($originY+10).'" class="graph-line" stroke="#a1a1a1" stroke-opacity="0.3" marker-end="url(#Triangle)"/>';
+			$return .= "\n\t\t\t".'<path d=" M '.$originX.' '.($originY+2*$radius).' L '.$originX.' '.($originY+10).'" class="graph-line" stroke="#a1a1a1" stroke-opacity="0.3" stroke-dasharray="2,2,2" marker-end="url(#Triangle)"/>';
 
 			$return .= "\n\t\t\t".'<text x="'.$originX.'" y="'.$originY.'" class="graph-legend" stroke="#a1a1a1" stroke-opacity="0.3">'.($diskLegendsType == 'label' ? $deg[0]['label'] : ($diskLegendsType == 'pourcent' ? ($deg[0]['pourcent']*100).'%' : $deg[0]['val'])).'</text>'."\n\t\t\t";
 		}
@@ -786,7 +789,7 @@ class phpGraph {
 				$return .= "\n\t\t\t".'<path d="M '.$originX.' '.($originY + $radius).'  A '.$radius.' '.$radius.'  0 '.$arc.' 1 '.($originX + $cos).' '.($originY + 2*$radius + $sin).' L '.$originX.' '.($originY+2*$radius).' z" fill="'.$deg[($key < ($lenght-1) ? $key+1 : $key)]['stroke'].'" class="graph-pie"/>'."\n\t\t\t";
 
 				if ($key < ($lenght-1) && $deg[$key+1]['val'] != 0 && $diskLegends == true) {
-					$return .= "\n\t\t\t".'<path d=" M '.($originX+$cos).' '.($originY+2*$radius + $sin).' L '.($originX + $cosLeg).' '.($originY + 2*$radius + $sinLeg + $gap).'" class="graph-line" stroke="#a1a1a1" stroke-opacity="0.3" marker-end="url(#Triangle)"/>';
+					$return .= "\n\t\t\t".'<path d=" M '.($originX+$cos).' '.($originY+2*$radius + $sin).' L '.($originX + $cosLeg).' '.($originY + 2*$radius + $sinLeg + $gap).'" class="graph-line" stroke="#a1a1a1" stroke-opacity="0.3"  stroke-dasharray="2,2,2" marker-end="url(#Triangle)"/>';
 
 					$return .= "\n\t\t\t".'<text x="'.($originX + $cosLeg + $gapTextX).'" y="'.($originY + 2*$radius + $sinLeg + $gapTextY).'" class="graph-legend" stroke="#a1a1a1" stroke-opacity="0.3">'.($diskLegendsType == 'label' ? $deg[$key+1]['label'] : ($diskLegendsType == 'pourcent' ? ($deg[$key+1]['pourcent']*100).'%' : $deg[$key+1]['val'])).'</text>'."\n\t\t\t";
 				}
