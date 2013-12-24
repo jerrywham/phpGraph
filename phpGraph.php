@@ -1,6 +1,6 @@
 <?php 
 # ------------------ BEGIN LICENSE BLOCK ------------------
-#	  ___________________________________________________			       
+#	  ___________________________________________________
 #    |													|
 #    |					PHP GRAPH	    ____			|
 #    |								   |	|			|
@@ -191,7 +191,7 @@ class phpGraph {
 			$return .= $x;
 			$return .= $y;
 			if (!$multi) {
-				$options['stroke'] = $stroke[0];
+				$options['stroke'] = is_array($stroke) ? $stroke[0] : $stroke;
 				switch ($type) {
 					case 'line':
 						$return .= $this->__drawLine($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options);
@@ -250,8 +250,10 @@ class phpGraph {
 					$legends = array(0 => $legends);
 				}
 				foreach ($legends as $key => $value) {
-					if (isset($stroke[$key])) {
+					if (is_array($stroke) && isset($stroke[$key])) {
 						$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke[$key].'" class="graph-legend-stroke"/>';
+					} else {
+						$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke.'" class="graph-legend-stroke"/>';
 					}
 					$leg .= "\n\t\t".'<text x="70" y="'.($HEIGHT+40+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value.'</text>';
 				}
