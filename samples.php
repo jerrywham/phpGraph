@@ -208,7 +208,7 @@ $G = new phpGraph();
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>phpGraph</title>
     <link rel="stylesheet" type="text/css" href="phpGraph_style.css" media="all">
-
+</head>
 <body>
     <?php
     //This is only to see code of the page. You can delet it.
