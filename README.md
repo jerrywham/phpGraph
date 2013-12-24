@@ -52,3 +52,5 @@ Options available :
       'diskLegends' => false,// (bool) to display legends around a pie
       'diskLegendsType' => 'label',// (string) "data", "pourcent" or "label" to display around a pie as legend
     );
+    
+See samples.php for more details.
