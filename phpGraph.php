@@ -22,6 +22,7 @@
 class phpGraph {
 
 	public $options = array(
+		'responsive' => true,
 		'width' => null,// (int) width of grid
 		'height' => null,// (int) height of grid
 		'paddingTop' => 10,// (int)
@@ -131,7 +132,12 @@ class phpGraph {
 			$x = $y = '';
 
 			//Size of canevas will be bigger than grid size to display legends
-			$return .= "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="70%" height="70%" viewBox="0 0 '.($lenght*$stepX+$stepX).' '.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop).'">'."\n";
+			if ($responsive == true) {
+				$return .= "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="70%" height="70%" viewBox="0 0 '.($lenght*$stepX+$stepX).' '.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop).'">'."\n";
+			} else {
+				$return .= "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="'.($lenght*$stepX+$stepX).'" height="'.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop).'" viewBox="0 0 '.($lenght*$stepX+$stepX).' '.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop).' ">'."\n";
+			}
+
 			if (is_array($gradient)) {
 				$id = 'BackgroundGradient'.rand();
 				$return .= "\n\t".'<defs>';
