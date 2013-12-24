@@ -29,8 +29,8 @@ To resume :
     $G->draw($data);
     ?>
   
-  Options available :
-  -------------------
+Options available :
+-------------------
   
      //All options available
     $options = array(
