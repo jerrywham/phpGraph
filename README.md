@@ -8,11 +8,12 @@ How to use ?
 
 First, data must be in an php array (one or two dimensions). 
 Then, an instance of phpGraph class have to be called after an inclusion of phpGraph.php file in your project.
-Then, the main method called draw is used, with or withour options. It' up to you.
+Then, the main method called draw is used, with or withour options. It's up to you.
 
 By default, it's a line histogram which is displaying.
 
 To resume :
+
     <?php 
     include(phpGraph.php);
   
@@ -26,6 +27,7 @@ To resume :
     $G = new phpGraph();
     
     $G->draw($data);
+    ?>
   
   Options available :
   -------------------
