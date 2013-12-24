@@ -417,7 +417,7 @@ class phpGraph {
 			$i++;
 			//End tooltips
 			if($tooltips == true) {
-				$c .= "\n\t\t\t".'<title class="graph-tooltip">'.$tooltipLegend.$value.'</title>'."\n\t\t".'</g>';
+				$c .= "\n\t\t\t".'<title class="graph-tooltip">'.(is_array($tooltipLegend) ? $tooltipLegend[$i] : $tooltipLegend).$value.'</title>'."\n\t\t".'</g>';
 			}
 		}
 		//End of line
@@ -599,7 +599,7 @@ class phpGraph {
 			$i++;
 			//End of tooltips
 			if($tooltips == true) {
-				$c .= '<title class="graph-tooltip">'.$tooltipLegend.$value.'</title>'."\n\t\t".'</g>';
+				$c .= '<title class="graph-tooltip">'.(is_array($tooltipLegend) ? $tooltipLegend[$i] : $tooltipLegend).$value.'</title>'."\n\t\t".'</g>';
 			}
 		}
 
