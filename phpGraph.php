@@ -32,7 +32,7 @@ class phpGraph {
 		'circles' => true,// (bool) to show circles on graph (lines or histograms)
 		'stroke' => '#3cc5f1',// (string) color of lines by default. Use an array to personalize each line
 		'background' => "#ffffff",// (string) color of grid background. Don't use short notation (#fff) because of $this->__genColor();
-		'gradient' => null,
+		'gradient' => null,// (array) 2 colors from left to right
 		'titleHeight' => 0,// (int) Height of main title
 		'tooltipLegend' => '',// (string or array) Text display in tooltip with y value. Each text can be personalized using an array.
 		'legends' => '',// (string or array) General legend for each line/histogram/disk displaying under diagram
