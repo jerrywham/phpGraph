@@ -1,0 +1,69 @@
+/* ------------------ BEGIN LICENSE BLOCK ------------------
+#	  ___________________________________________________			       
+#    |													|
+#    |					PHP GRAPH	    ____			|
+#    |								   |	|			|
+#    |						  ____	   |	|			|
+#    |				 /\		 |	  |	   |	|			|
+#    |			   /   \	 |	  |	   |	|			|
+#    |		/\	 /		\	 |	  |____|	|			|
+#    |	  /   \/		 \	 |	  |	   |	|			|
+#    |	/				  \	 |	  |	   |	|			|
+#    |/____________________\_|____|____|____|___________|
+#
+# @update     2013-12-17
+# @copyright  2013 Cyril MAGUIRE
+# @licence    http://www.cecill.info/licences/Licence_CeCILL_V2.1-fr.txt CONTRAT DE LICENCE DE LOGICIEL LIBRE CeCILL version 2.1
+# @link       http://phpchart.ecsyeo.net
+# @version    1.0
+#
+# ------------------- END LICENSE BLOCK -------------------*/
+svg {
+	display: block;
+	margin:auto;
+	margin-bottom: 50px;
+}
+.graph-title {
+	stroke-width:4;
+	stroke:transparent;
+	fill:#424242;
+	font-size: 1.2em;
+}
+.graph-grid {
+	stroke-width:1;
+	stroke:#c4c4c4;
+}
+.graph-stroke {
+	stroke-width:2;
+	stroke:#424242;
+}
+.graph-legends {}
+.graph-legend {}
+.graph-legend-stroke {}
+.graph-line {
+	stroke-linejoin:round;
+	stroke-width:2;
+}
+.graph-fill {
+	stroke-width:0;
+}
+.graph-bar {}
+.graph-point {
+	stroke-width:1;
+	fill:#fff;
+	fill-opacity:1;
+	stroke-opacity:1;
+}
+.graph-point-active:hover {
+	stroke-width:5;
+	transition-duration:.9s;
+	cursor: pointer;
+}
+ title.graph-tooltip {
+	background-color:#666666;
+}
+.graph-pie {
+	cursor: pointer;
+	stroke-width:1;
+	stroke:#fff;
+}
