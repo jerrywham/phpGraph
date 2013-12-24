@@ -228,89 +228,90 @@ $G = new phpGraph();
 <body>
     <?php
     //This is only to see code of the page. You can delet it.
-    // highlight_string(file_get_contents('samples.php'));
+    highlight_string(file_get_contents('samples.php'));
 
-    // //Then we draw charts
-    // echo '<h1>Multi lines with histogram and pie</h1>';
+    //Then we draw charts
+    echo '<h1>Multi lines with histogram and pie</h1>';
 
-    // echo $G->draw($data,array(
-    //         'steps' => 50,
-    //         'filled'=>false,
-    //         'multi'=>true,
-    //         'tooltips'=>true,
-    //         'diskLegends' => true,
-    //         'diskLegendsType' => 'label',
-    //         'type' => array(
-    //             '3'=>'bar',
-    //             '4'=>'pie',
-    //         ),
-    //         'stroke' => array(
-    //             '0'=>'red',
-    //             '1'=>'blue',
-    //             '2'=>'orange',
-    //             '3'=>'green',
-    //             '4'=>'deeppink'
-    //         ),
-    //         'legends' => array(
-    //             '0'=>'Serie 1',
-    //             '1'=>'Serie 2',
-    //             '2'=>'Serie 3',
-    //             '3'=>'Serie 4',
-    //             '4'=>'Serie 5',
-    //         ),
-    //         'tooltipLegend' => array(
-    //             '0'=>'Sample of legend : ',
-    //             '1'=>'Sample of legend : ',
-    //             '2'=>'Sample of legend : ',
-    //             '3'=>'Sample of legend : ',
-    //             '4'=>'Sample of legend : ',
-    //         ),
-    //         'title' => 'Amazing phpChart',
-    //     )
-    // );
-    // echo '<h1>Multi lines filled with no legend nor tooltip. Gradient as background</h1>';
+    echo $G->draw($data,array(
+            'steps' => 50,
+            'filled'=>false,
+            'multi'=>true,
+            'tooltips'=>true,
+            'diskLegends' => true,
+            'diskLegendsType' => 'label',
+            'type' => array(
+                '3'=>'bar',
+                '4'=>'pie',
+            ),
+            'stroke' => array(
+                '0'=>'red',
+                '1'=>'blue',
+                '2'=>'orange',
+                '3'=>'green',
+                '4'=>'deeppink'
+            ),
+            'legends' => array(
+                '0'=>'Serie 1',
+                '1'=>'Serie 2',
+                '2'=>'Serie 3',
+                '3'=>'Serie 4',
+                '4'=>'Serie 5',
+            ),
+            'tooltipLegend' => array(
+                '0'=>'Sample of legend : ',
+                '1'=>'Sample of legend : ',
+                '2'=>'Sample of legend : ',
+                '3'=>'Sample of legend : ',
+                '4'=>'Sample of legend : ',
+            ),
+            'title' => 'Amazing phpChart',
+        )
+    );
+    echo '<h1>Multi lines filled with no legend nor tooltip. Gradient as background</h1>';
 
-    // echo $G->draw($data,array(
-    //         'steps' => 50,
-    //         'filled' => true,
-    //         'circles' => false,
-    //         'gradient' => array('green', '#00FF00')
-    //     )
-    // );
+    echo $G->draw($data,array(
+            'steps' => 50,
+            'filled' => true,
+            'circles' => false,
+            'gradient' => array('green', '#00FF00')
+        )
+    );
 
-    // echo '<h1>Histogram</h1>';
+    echo '<h1>Histogram</h1>';
 
-    // echo $G->draw($dataFirst,array(
-    //         'filled' => true,
-    //         'type' => 'bar',
-    //         'tooltips' => true,
-    //         'legends' => 'Visits by year',
-    //         'tooltipLegend' => 'Total : ',
-    //         'title' => '',
-    //         'width' => 900,
-    //         'height' => 900,
-    //     ));
+    echo $G->draw($dataFirst,array(
+            'filled' => true,
+            'type' => 'bar',
+            'tooltips' => true,
+            'legends' => 'Visits by year',
+            'tooltipLegend' => 'Total : ',
+            'title' => '',
+            'width' => 900,
+            'height' => 900,
+        ));
 
-    // echo '<h1>Same data as a pie</h1>';
+    echo '<h1>Same data as a pie</h1>';
 
-    // echo $G->draw($dataFirst,array(
-    //         'type' => 'pie',
-    //         'title' => 'A beautifull pie with phpChart',
-    //         'tooltips'=> true,
-    //         'tooltipLegend' => 'Happy users : ',
-    //         'stroke' => array(
-    //             '0'=>'red',
-    //             '1'=>'blue',
-    //             '2'=>'orange',
-    //             '3'=>'green',
-    //             '4'=>'deeppink'
-    //         ),
-    //         'diskLegends' => true,
-    //         'diskLegendsType' => 'pourcent',
-    //         'gradient' => array('grey', 'white')
-    //     )
-    // );
+    echo $G->draw($dataFirst,array(
+            'type' => 'pie',
+            'title' => 'A beautifull pie with phpChart',
+            'tooltips'=> true,
+            'tooltipLegend' => 'Happy users : ',
+            'stroke' => array(
+                '0'=>'red',
+                '1'=>'blue',
+                '2'=>'orange',
+                '3'=>'green',
+                '4'=>'deeppink'
+            ),
+            'diskLegends' => true,
+            'diskLegendsType' => 'pourcent',
+            'gradient' => array('grey', 'white')
+        )
+    );
     echo $G->draw($d,array(
+            'responsive' => false,
             'filled' => true,
             'tooltips' => true,
             'type' => 'bar',
