@@ -10,6 +10,18 @@ First, data must be in an php array (one or two dimensions).
 Then, an instance of phpGraph class have to be called after an inclusion of phpGraph.php file in your project.
 Then, the main method called draw is used, with or withour options. It's up to you.
 
+Add phpGraph_style.css to header of your page for display graph.
+
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+        <title>phpGraph</title>
+        <link rel="stylesheet" type="text/css" href="phpGraph_style.css" media="all">
+    </head>
+    <body> (...)
+
 By default, it's a line histogram which is displaying.
 
 To resume :
