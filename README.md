@@ -64,6 +64,13 @@ Options available :
       'radius' => 100,// (int) Radius of pie
       'diskLegends' => false,// (bool) to display legends around a pie
       'diskLegendsType' => 'label',// (string) "data", "pourcent" or "label" to display around a pie as legend
+      'responsive' => true,// (bool) to avoid svg to be responsive (dimensions fixed)
     );
     
-See samples.php for more details.
+See [samples.php](http://www.ecyseo.net/?static8/phpgraph) for more details.
+
+[Page of project on github](http://jerrywham.github.io/phpGraph/)
+
+Licence :
+---------
+[CONTRAT DE LICENCE DE LOGICIEL LIBRE CeCILL version 2.1](http://www.cecill.info/licences/Licence_CeCILL_V2.1-fr.txt)
