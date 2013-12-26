@@ -40,9 +40,18 @@
 Then, an instance of phpGraph class have to be called after an inclusion of phpGraph.php file in your project.
 Then, the main method called draw is used, with or withour options. It's up to you.</p>
 
-<p>Css style is mandatory to display graphics. Add this line in header :</p>
+<p>Add phpGraph_style.css to header of your page for display graph.</p>
 
-<pre><code>&lt;link rel="stylesheet" type="text/css" href="phpGraph_style.css" media="all"&gt;</code></pre>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="fr"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt; 
+    &lt;title&gt;phpGraph&lt;/title&gt;
+    &lt;link rel="stylesheet" type="text/css" href="phpGraph_style.css" media="all"&gt;
+&lt;/head&gt;
+&lt;body&gt; (...)
+</code></pre>
 
 <p>By default, it's a line histogram which is displaying.</p>
 
@@ -77,24 +86,28 @@ $options = array(
   'filled' =&gt; true,// (bool) to fill lines/histograms/disks
   'tooltips' =&gt; false,// (bool) to show tooltips
   'circles' =&gt; true,// (bool) to show circles on graph (lines or histograms)
-  'stroke' =&gt; '#3cc5f1',// (string) color of lines by default. 
-                        //Use an array to personalize each line
-  'background' =&gt; "#ffffff",// (string) color of grid background.
-  'gradient' =&gt; null, // (array) 2 colors from left to right
+  'stroke' =&gt; '#3cc5f1',// (string) color of lines by default. Use an array to personalize each line
+  'background' =&gt; "#ffffff",// (string) color of grid background. Don't use short notation (#fff) because of $this-&gt;__genColor();
+  'gradient' =&gt; null,// (array) 2 colors from left to right
   'titleHeight' =&gt; 0,// (int) Height of main title
-  'tooltipLegend' =&gt; '',// (string or array) Text display in tooltip with y value. 
-                        //Each text can be personalized using an array.
-  'legends' =&gt; '',// (string or array) General legend for each line/histogram/disk 
-                 //displaying under diagram
+  'tooltipLegend' =&gt; '',// (string or array) Text display in tooltip with y value. Each text can be personalized using an array.
+  'legends' =&gt; '',// (string or array) General legend for each line/histogram/disk displaying under diagram
   'title' =&gt; null,// (string) Main title. Title wil be displaying in a tooltip too.
   'radius' =&gt; 100,// (int) Radius of pie
   'diskLegends' =&gt; false,// (bool) to display legends around a pie
-  'diskLegendsType' =&gt; 'label',// (string) "data", "pourcent" or "label" 
-                               //to display around a pie as legend
+  'diskLegendsType' =&gt; 'label',// (string) "data", "pourcent" or "label" to display around a pie as legend
+  'responsive' =&gt; true,// (bool) to avoid svg to be responsive (dimensions fixed)
 );
 </code></pre>
 
-<p>See <a href="http://www.ecyseo.net/?static8/phpgraph" onclick="window.open(this.href);return false;">samples for more details</a>.</p>
+<p>See <a href="http://www.ecyseo.net/?static8/phpgraph">samples.php</a> for more details.</p>
+
+<p><a href="http://jerrywham.github.io/phpGraph/">Page of project on github</a></p>
+
+<h2>
+<a name="licence-" class="anchor" href="#licence-"><span class="octicon octicon-link"></span></a>Licence :</h2>
+
+<p><a href="http://www.cecill.info/licences/Licence_CeCILL_V2.1-fr.txt">CONTRAT DE LICENCE DE LOGICIEL LIBRE CeCILL version 2.1</a></p>
         </section>
 
         <aside id="sidebar">
