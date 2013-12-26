@@ -489,23 +489,23 @@ class phpGraph {
 				$c .= "\n\t\t".'<g class="graph-active">';
 			}
 
-			$stepY = ($value * $unitY);
+			$stepY = $value*$unitY;
 
 			//$min>=0
-			$coordonnees1 = 'x="'.($i * $stepX + 50).'" y="'.($HEIGHT - $stepY).'"';
+			$coordonnees1 = 'x="'.($i * $stepX + 50).'" y="'.($HEIGHT + $unitY*($min-$value)).'"';
 			//On recule d'un demi pas pour que la valeur de x soit au milieu de la barre de diagramme
 			$coordonnees2 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($HEIGHT - $stepY).'"';
 			//$min<0
-			$coordonnees3 = 'x="'.($i * $stepX + 50).'" y="'.($paddingTop + $titleHeight + ($max-$value) * $unitY).'"';
-			$coordonnees4 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($paddingTop + $titleHeight + ($max-$value) * $unitY).'"';
+			$coordonnees3 = 'x="'.($i * $stepX + 50).'" y="'.($HEIGHT + $unitY*($min-$value)).'"';
+			$coordonnees4 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($HEIGHT + $unitY*($min-$value)).'"';
 			//$min<0 et $value<0
-			$coordonnees5 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($paddingTop + $titleHeight + ($max-$value) * $unitY + $stepY).'"';
-			$coordonnees6 = 'x="'.($i * $stepX + 50).'" y="'.($paddingTop + $titleHeight + ($max-$value) * $unitY + $stepY).'"';
+			$coordonnees5 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($HEIGHT + $unitY*($min-$value)).'"';
+			$coordonnees6 = 'x="'.($i * $stepX + 50).'" y="'.($HEIGHT + $unitY*($min-$value)).'"';
 			//$min>=0 et $value == $max
 			$coordonnees7 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($HEIGHT - $stepY).'"';
 			$coordonnees8 = 'x="'.($i * $stepX + 50).'" y="'.($paddingTop + $titleHeight).'"';
 			//$value == 0
-			$coordonnees9 = 'x="50" y="'.($paddingTop + $titleHeight + ($max) * $unitY).'"';
+			$coordonnees9 = 'x="50" y="'.($HEIGHT + $unitY*$min).'"';
 			if ($value == 0) {
 				$stepY = 1;
 			}
@@ -589,7 +589,7 @@ class phpGraph {
 						if ($value >= 0) {
 							//Si on n'est pas sur la dernière valeur
 							if ($i != $lenght-1) {
-								$bar .= "\n\t".'<rect '.$coordonnees4.' width="'.$stepX.'" height="'.$stepY.'" class="graph-bar" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>';
+								$bar .= "\n\t".'<rect '.$coordonnees4.' width="'.$stepX.'" height="'.($stepY).'" class="graph-bar" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>';
 							} else {
 								$bar .= "\n\t".'<rect '.$coordonnees4.' width="'.($stepX/2).'" height="'.$stepY.'" class="graph-bar" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>';
 							}
