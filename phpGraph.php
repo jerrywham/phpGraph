@@ -27,7 +27,7 @@ class phpGraph {
 		'height' => null,// (int) height of grid
 		'paddingTop' => 10,// (int)
 		'type' => 'line',// (string) bar or disk
-		'steps' => 5,// (int) 2 graduations on y-axis are separated by $steps units
+		'steps' => null,// (int) 2 graduations on y-axis are separated by $steps units. "steps" is automatically calculated but we can set the value with integer
 		'filled' => true,// (bool) to fill lines/histograms/disks
 		'tooltips' => false,// (bool) to show tooltips
 		'circles' => true,// (bool) to show circles on graph (lines or histograms)
@@ -126,6 +126,23 @@ class phpGraph {
 				$min = min($data);
 				$max = max($data);
 			}
+			if (!is_float($max)) {
+				$l = strlen(abs($max))-1;
+				if ($l == 0) {$l = 1;}
+				$M =  ceil($max/($l*10))*($l*10);
+				$steps = $l*10;
+			} else {
+				$abs = abs($max);
+				$decimal = substr($abs,strpos($abs, '.')+1);
+				$int = substr($abs, 0, strpos($abs, '.'));
+				$l = strlen($decimal)-1;
+				if ($l == 0) {$l = 1;}
+				$M =  $int.'.'.ceil($decimal/($l*10))*($l*10);
+				$steps = '0.'.$l*10;
+			}
+			if (isset($options['steps']) && is_int($steps) ) {
+				$steps = $options['steps'];
+			}
 			$stepX = $width / ($lenght - 1);
 			$unitY = ($height/abs(($max+$steps)-$min));
 			$gridV = $gridH = '';
@@ -173,6 +190,7 @@ class phpGraph {
 			if ($min>0 || ($min<0 && $max<0)) {
 				$min = 0;
 			}
+			
 			for ($i=$min; $i <= ($max+$steps); $i+=$steps) {
 	 			//1 graduation every $steps units
 	 			if ($min<0) {
