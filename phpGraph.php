@@ -12,11 +12,11 @@
 #    |	/				  \	 |	  |	   |	|			|
 #    |/____________________\_|____|____|____|___________|
 #
-# @update     2013-12-17
+# @update     2013-12-27
 # @copyright  2013 Cyril MAGUIRE
 # @licence    http://www.cecill.info/licences/Licence_CeCILL_V2.1-fr.txt CONTRAT DE LICENCE DE LOGICIEL LIBRE CeCILL version 2.1
 # @link       http://jerrywham.github.io/phpGraph/
-# @version    1.0
+# @version    1.1
 #
 # ------------------- END LICENSE BLOCK -------------------
 class phpGraph {
