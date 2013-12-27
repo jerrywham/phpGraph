@@ -812,11 +812,11 @@ class phpGraph {
 
 				$return .= "\n\t\t\t".'<path d=" M '.$originX.' '.($originY+2*$radius).' L '.$originX.' '.($originY+10).'" class="graph-line" stroke="darkgrey" stroke-opacity="0.5" stroke-dasharray="2,2,2" marker-end="url(#Triangle)"/>';
 
-				$return .= "\n\t\t\t".'<text x="'.$originX.'" y="'.$originY.'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">'.($diskLegendsType == 'label' ? $deg[$i]['label'] : ($diskLegendsType == 'pourcent' ? ($deg[$i]['pourcent']*100).'%' : $deg[$i]['val'])).'</text>'."\n\t\t\t";
+				$return .= "\n\t\t\t".'<text x="'.$originX.'" y="'.$originY.'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">'.($diskLegendsType == 'label' ? (isset($legends[$i]['label']) ? $legends[$i]['label'] : $deg[$i]['label']) : ($diskLegendsType == 'pourcent' ? ($deg[$i]['pourcent']*100).'%' : $deg[$i]['val'])).'</text>'."\n\t\t\t";
 				
 				//End tooltips
 				if($tooltips == true) {
-					$return .= '<title class="graph-tooltip">'.$deg[$i]['tooltipLegend'].$deg[$i]['label'].' : '.$deg[$i]['val'].'</title>';
+					$return .= '<title class="graph-tooltip">'.$deg[$i]['tooltipLegend'].(isset($legends[$i]['label']) ? $legends[$i]['label'] : $deg[$i]['label']).' : '.$deg[$i]['val'].'</title>';
 					$return .= "\n\t\t".'</g>';
 				}
 				$i = $deg[$i]['label'];
@@ -874,11 +874,11 @@ class phpGraph {
 				if ($key < ($lenght-1) && $deg[$key+1]['val'] != 0 && $diskLegends == true && $deg[$key+1]['label'] != $i) {
 					$return .= "\n\t\t\t".'<path d=" M '.($originX+$cos).' '.($originY+2*$radius + $sin).' L '.($originX + $cosLeg).' '.($originY + 2*$radius + $sinLeg + $gap).'" class="graph-line" stroke="darkgrey" stroke-opacity="0.5"  stroke-dasharray="2,2,2" marker-end="url(#Triangle)"/>';
 
-					$return .= "\n\t\t\t".'<text x="'.($originX + $cosLeg + $gapTextX).'" y="'.($originY + 2*$radius + $sinLeg + $gapTextY).'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">'.($diskLegendsType == 'label' ? $deg[$key+1]['label'] : ($diskLegendsType == 'pourcent' ? ($deg[$key+1]['pourcent']*100).'%' : $deg[$key+1]['val'])).'</text>'."\n\t\t\t";
+					$return .= "\n\t\t\t".'<text x="'.($originX + $cosLeg + $gapTextX).'" y="'.($originY + 2*$radius + $sinLeg + $gapTextY).'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">'.($diskLegendsType == 'label' ? (isset($legends[$lenght-$key-2]['label']) ? $legends[$lenght-$key-2]['label'] : $deg[$key+1]['label']) : ($diskLegendsType == 'pourcent' ? ($deg[$key+1]['pourcent']*100).'%' : $deg[$key+1]['val'])).'</text>'."\n\t\t\t";
 				}
 				//End tooltips
 				if($tooltips == true && $key < ($lenght-1)) {
-					$return .= '<title class="graph-tooltip">'.$deg[$key+1]['tooltipLegend'].$deg[$key+1]['label'].' : '.$deg[$key+1]['val'].'</title>'."\n\t\t".'</g>';
+					$return .= '<title class="graph-tooltip">'.$deg[$key+1]['tooltipLegend'].(isset($legends[$lenght-$key-2]['label']) ? $legends[$lenght-$key-2]['label'] : $deg[$key+1]['label']).' : '.$deg[$key+1]['val'].'</title>'."\n\t\t".'</g>';
 				}
 		}
 
