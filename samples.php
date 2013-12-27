@@ -64,7 +64,7 @@ $flot = array(
 
     "7" => array(
             "0" => 2008,
-            "1" => 20,
+            "1" => -20,
         ),
 
     "8" => array(
@@ -154,7 +154,7 @@ $data[3] = array(
     "2006" => 2,
     "2007" => 3,
     "2008" => 3,
-    "2009" => 5,
+    "2009" => -5,
     "2010" => 8,
     "2011" => 9,
     "2012" => 5,
@@ -176,7 +176,7 @@ $data[4] = array(
     "2013" => 0
 );
 $d = array(
-    "2000" => 7,
+    "2000" => -7,
     "2001" => 15,
     "2002" => 39,
     "2003" => 26,
@@ -197,7 +197,7 @@ $options = array(
     'width' => null,// (int) width of grid
     'height' => null,// (int) height of grid
     'paddingTop' => 10,// (int)
-    'type' => 'line',// (string) "bar" or "pie"
+    'type' => 'line',// (string) line, bar, pie or ring
     'steps' => 5,// (int) 2 graduations on y-axis are separated by $steps units
     'filled' => true,// (bool) to fill lines/histograms/disks
     'tooltips' => false,// (bool) to show tooltips
@@ -228,7 +228,7 @@ $G = new phpGraph();
 <body>
     <?php
     //This is only to see code of the page. You can delet it.
-    highlight_string(file_get_contents('samples.php'));
+    //highlight_string(file_get_contents('samples.php'));
 
     // //Then we draw charts
     echo '<h1>Multi lines with histogram and pie</h1>';
@@ -240,8 +240,9 @@ $G = new phpGraph();
             'diskLegends' => true,
             'diskLegendsType' => 'label',
             'type' => array(
-                '3'=>'bar',
-                '4'=>'pie',
+                '2'=>'bar',
+                '3'=>'pie',
+                '4'=>'ring',
             ),
             'stroke' => array(
                 '0'=>'red',
@@ -264,7 +265,7 @@ $G = new phpGraph();
                 '3'=>'Sample of legend : ',
                 '4'=>'Sample of legend : ',
             ),
-            'title' => 'Amazing phpChart',
+            'title' => 'Amazing phpGraph',
         )
     );
     echo '<h1>Multi lines filled with no legend nor tooltip. Gradient as background</h1>';
@@ -294,7 +295,7 @@ $G = new phpGraph();
 
     echo $G->draw($dataFirst,array(
             'type' => 'pie',
-            'title' => 'A beautifull pie with phpChart',
+            'title' => 'A beautifull pie with phpGraph',
             'tooltips'=> true,
             'tooltipLegend' => 'Happy users : ',
             'stroke' => array(
@@ -313,8 +314,9 @@ $G = new phpGraph();
     echo $G->draw($d,array(
             'responsive' => false,
             'filled' => true,
+            'opacity'=>0.9,
             'tooltips' => true,
-            'type' => 'bar',
+            'type' => 'line',
             //'steps' => 20
             //'legends' => 'Nombre de patients par an'
         ));
