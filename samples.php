@@ -236,7 +236,6 @@ $G = new phpGraph();
     echo $G->draw($data,array(
             'steps' => 50,
             'filled'=>false,
-            'multi'=>true,
             'tooltips'=>true,
             'diskLegends' => true,
             'diskLegendsType' => 'label',
@@ -305,6 +304,7 @@ $G = new phpGraph();
                 '3'=>'green',
                 '4'=>'deeppink'
             ),
+            'legends' => true,
             'diskLegends' => true,
             'diskLegendsType' => 'pourcent',
             'gradient' => array('grey', 'white')

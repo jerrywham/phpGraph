@@ -36,7 +36,7 @@ class phpGraph {
 		'gradient' => null,// (array) 2 colors from left to right
 		'titleHeight' => 0,// (int) Height of main title
 		'tooltipLegend' => '',// (string or array) Text display in tooltip with y value. Each text can be personalized using an array.
-		'legends' => '',// (string or array) General legend for each line/histogram/disk displaying under diagram
+		'legends' => '',// (string or array or bool) General legend for each line/histogram/disk displaying under diagram
 		'title' => null,// (string) Main title. Title wil be displaying in a tooltip too.
 		'radius' => 100,// (int) Radius of pie
 		'diskLegends' => false,// (bool) to display legends around a pie
@@ -725,13 +725,15 @@ class phpGraph {
 			$i++;
 		}
 		if (isset($legends)) {
-			if (!is_array($legends) && !empty($legends)) {
+			if (!is_array($legends) && !empty($legends) && !is_bool($legends)) {
 				$legends = array( 
 					'label' => $legends,
 					'stroke' => (is_array($stroke) ) ? $stroke[0] : $this->__genColor()
 				);
 			} elseif (empty($legends)) {
 				$notDisplayLegends = true;
+			} elseif (is_bool($legends)) {
+				$legends = array();
 			}
 			foreach ($deg as $k => $v) {
 				if (!isset($legends[$k])) {
