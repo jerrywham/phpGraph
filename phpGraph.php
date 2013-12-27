@@ -26,13 +26,14 @@ class phpGraph {
 		'width' => null,// (int) width of grid
 		'height' => null,// (int) height of grid
 		'paddingTop' => 10,// (int)
-		'type' => 'line',// (string) bar or disk
+		'type' => 'line',// (string) line, bar, pie or ring (todo stock, curve)
 		'steps' => null,// (int) 2 graduations on y-axis are separated by $steps units. "steps" is automatically calculated but we can set the value with integer
 		'filled' => true,// (bool) to fill lines/histograms/disks
 		'tooltips' => false,// (bool) to show tooltips
 		'circles' => true,// (bool) to show circles on graph (lines or histograms)
 		'stroke' => '#3cc5f1',// (string) color of lines by default. Use an array to personalize each line
 		'background' => "#ffffff",// (string) color of grid background. Don't use short notation (#fff) because of $this->__genColor();
+		'opacity' => '0.5',
 		'gradient' => null,// (array) 2 colors from left to right
 		'titleHeight' => 0,// (int) Height of main title
 		'tooltipLegend' => '',// (string or array) Text display in tooltip with y value. Each text can be personalized using an array.
@@ -90,6 +91,9 @@ class phpGraph {
 		if (isset($title)) {
 			$options['titleHeight'] = $titleHeight = 40;
 		}
+		if ($opacity < 0 || $opacity > 1) {
+			$options['opacity'] = 0.5;
+		}
 
 		$HEIGHT = $height+$titleHeight+$paddingTop;
 
@@ -100,8 +104,9 @@ class phpGraph {
 
 		$pie = '';
 
-		if ($type != 'pie') {
+		if ($type != 'pie' && $type != 'ring') {
 			$arrayOfMin = $arrayOfMax = $arrayOfLenght = $labels = array();
+			$tmp['type'] = array();
 			//For each diagrams with several lines/histograms
 			foreach ($data as $line => $datas) {
 				if (is_array($datas)) {
@@ -109,12 +114,19 @@ class phpGraph {
 					$arrayOfMax[] = max($datas);
 					$arrayOfLenght[] = count($datas);
 					$labels = array_merge(array_keys($datas),$labels);
+					if (is_string($type)) {
+						$tmp['type'][] = $type;
+					}
 					$multi = true;
 				} else {
 					$multi = false;
 				}
 			}
 			if ($multi == true) {
+				if (!empty($tmp['type'])) {
+					$type = $options['type'] = $tmp['type'];
+				}
+				unset($tmp);
 				$labels = array_unique($labels);
 				$min = min($arrayOfMin);
 				$max = max($arrayOfMax);
@@ -223,6 +235,7 @@ class phpGraph {
 					case 'bar':
 						$return .= $this->__drawBar($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options);
 						break;
+					case 'ring':
 					case 'pie':
 						if (is_array($stroke)) {
 							$options['stroke'] = $stroke;
@@ -257,7 +270,6 @@ class phpGraph {
 					}
 					$options['stroke'] = $stroke[$line];
 					$options['fill'] = $stroke[$line];
-					
 					switch ($type[$line]) {
 						case 'line':
 							$return .= $this->__drawLine($datas,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options);
@@ -265,6 +277,8 @@ class phpGraph {
 						case 'bar':
 							$return .= $this->__drawBar($datas,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options);
 							break;
+						case 'ring':
+							$options['subtype'] = 'ring';
 						case 'pie':
 							$options['multi'] = $multi;
 							if (is_array($stroke)) {
@@ -289,7 +303,7 @@ class phpGraph {
 					$legends = array(0 => $legends);
 				}
 				foreach ($legends as $key => $value) {
-					if ($type[$key] != 'pie') {
+					if (isset($type[$key]) && $type[$key] != 'pie' && $type[$key] != 'ring') {
 						if (is_array($stroke) && isset($stroke[$key])) {
 							$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke[$key].'" class="graph-legend-stroke"/>';
 						} else {
@@ -481,6 +495,10 @@ class phpGraph {
 				$c .= "\n\t\t\t".'<title class="graph-tooltip">'.(is_array($tooltipLegend) ? $tooltipLegend[$i] : $tooltipLegend).$value.'</title>'."\n\t\t".'</g>';
 			}
 		}
+		if ($opacity > 0.8 && $filled === true) {
+			$tmp = $stroke;
+			$stroke = '#a1a1a1';
+		}
 		//End of line
 		$pathLine = '" class="graph-line" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>'."\n";
 		//Filling
@@ -490,8 +508,10 @@ class phpGraph {
 			} else {
 				$path .= "\n\t\t\t\t".(($i - 1) * $stepX + 50).' '.$HEIGHT.' 50 '.$HEIGHT."\n\t\t\t\t";
 			}
-			
-			$return .= $path.'" class="graph-fill" fill="'.$stroke.'" fill-opacity="0.5"/>'."\n";
+			if ($opacity > 0.8) {
+				$stroke = $tmp;
+			}
+			$return .= $path.'" class="graph-fill" fill="'.$stroke.'" fill-opacity="'.$opacity.'"/>'."\n";
 		}
 		//Display line
 		$return .= $path.$pathLine;
@@ -665,7 +685,10 @@ class phpGraph {
 
 		//Filling
 		if ($filled === true) {
-			$barFilled = str_replace(' class="graph-bar" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>', ' class="graph-bar" fill="'.$stroke.'" fill-opacity="0.5"/>',$bar);
+			if ($opacity == 1) {
+				$opacity = '1" stroke="#424242';
+			}
+			$barFilled = str_replace(' class="graph-bar" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>', ' class="graph-bar" fill="'.$stroke.'" fill-opacity="'.$opacity.'"/>',$bar);
 			$return .= $barFilled;
 		}
 
@@ -909,6 +932,9 @@ class phpGraph {
 			$leg .= "\n\t".'</g>';
 
 			$return .= $leg;
+		}
+		if ($type == 'ring' || isset($subtype)) {
+			$return .= '<circle cx="'.$originX.'" cy="'.($originY+2*$radius).'" r="'.($radius/2).'" fill="'.$background.'" class="graph-pie"/>';
 		}
 
 		return $return;
