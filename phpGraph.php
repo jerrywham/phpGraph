@@ -206,6 +206,13 @@ class phpGraph {
 						$return .= $this->__drawBar($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options);
 						break;
 					case 'pie':
+						if (is_array($stroke)) {
+							$options['stroke'] = $stroke;
+							$options['fill'] = $stroke;
+						}
+						if (is_array($legends)) {
+							$options['legends'] = $legends;
+						}
 						$pie .= $this->__drawDisk($data,$options);
 						$pie .= "\n".'</svg>'."\n";
 						break;
@@ -241,6 +248,14 @@ class phpGraph {
 							$return .= $this->__drawBar($datas,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options);
 							break;
 						case 'pie':
+							$options['multi'] = $multi;
+							if (is_array($stroke)) {
+								$options['stroke'] = $stroke;
+								$options['fill'] = $stroke;
+							}
+							if (is_array($legends)) {
+								$options['legends'] = $legends;
+							}
 							$pie .= $this->__drawDisk($datas,$options);
 							$pie .= "\n".'</svg>'."\n";
 							break;
@@ -256,12 +271,14 @@ class phpGraph {
 					$legends = array(0 => $legends);
 				}
 				foreach ($legends as $key => $value) {
-					if (is_array($stroke) && isset($stroke[$key])) {
-						$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke[$key].'" class="graph-legend-stroke"/>';
-					} else {
-						$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke.'" class="graph-legend-stroke"/>';
+					if ($type[$key] != 'pie') {
+						if (is_array($stroke) && isset($stroke[$key])) {
+							$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke[$key].'" class="graph-legend-stroke"/>';
+						} else {
+							$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke.'" class="graph-legend-stroke"/>';
+						}
+						$leg .= "\n\t\t".'<text x="70" y="'.($HEIGHT+40+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value.'</text>';
 					}
-					$leg .= "\n\t\t".'<text x="70" y="'.($HEIGHT+40+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value.'</text>';
 				}
 				$leg .= "\n\t".'</g>';
 
@@ -292,6 +309,13 @@ class phpGraph {
 			}
 			foreach ($data as $line => $datas) {
 				if (is_array($datas)) {
+					if (is_array($stroke)) {
+						$options['stroke'] = $stroke;
+						$options['fill'] = $stroke;
+					}
+					if (is_array($legends)) {
+						$options['legends'] = $legends;
+					}
 					$return .= $this->__drawDisk($datas,$options);
 					$return .= "\n".'</svg>'."\n";
 					$multi = true;
@@ -300,6 +324,13 @@ class phpGraph {
 				}
 			}
 			if (!$multi) {
+				if (is_array($stroke)) {
+					$options['stroke'] = $stroke;
+					$options['fill'] = $stroke;
+				}
+				if (is_array($legends)) {
+					$options['legends'] = $legends;
+				}
 				$return .= $this->__drawDisk($data,$options);
 				$return .= "\n".'</svg>'."\n";
 			}
@@ -631,6 +662,23 @@ class phpGraph {
 	}
 
 	/**
+	 * Searches the array for a given value and returns the corresponding key if successful
+	 * @param $needle mixed The searched value
+	 * @param $haystack array The array
+	 * 
+	 * @author buddel (see comments on php man array_search function page)
+	 */
+	public function recursive_array_search($needle,$haystack) {
+	    foreach($haystack as $key=>$value) {
+	        $current_key=$key;
+	        if($needle===$value OR (is_array($value) && $this->recursive_array_search($needle,$value) !== false)) {
+	            return $current_key;
+	        }
+	    }
+	    return false;
+	}
+
+	/**
 	 * To draw pie diagrams
 	 * @param $data array Unidimensionnal array
 	 * @param $options array Options
@@ -676,10 +724,26 @@ class phpGraph {
 			}
 			$i++;
 		}
-		if (isset($legends) && count($legends) != $lenght) {
+		if (isset($legends)) {
+			if (!is_array($legends) && !empty($legends)) {
+				$legends = array( 
+					'label' => $legends,
+					'stroke' => (is_array($stroke) ) ? $stroke[0] : $this->__genColor()
+				);
+			} elseif (empty($legends)) {
+				$notDisplayLegends = true;
+			}
 			foreach ($deg as $k => $v) {
 				if (!isset($legends[$k])) {
-					$legends[$k] = $v['label'];
+					$legends[$k] = array(
+						'label' => $v['label'],
+						'stroke' => (is_array($stroke) && isset($stroke[$k]) ) ? $stroke[$k] : $v['stroke']
+					);
+				}else {
+					$legends[$k] = array(
+						'label' => (isset($multi) ? $v['label'] : $legends[$k]),
+						'stroke' => $v['stroke']
+					);
 				}
 			}
 		}
@@ -728,29 +792,40 @@ class phpGraph {
 		$oy = $prevOriginY = $originY;
 		$total = 1;
 
-		//Tooltips
-		if($tooltips == true) {
-			$return .= "\n\t\t".'<g class="graph-active">';
-		}
-		
-		$return .= "\n\t\t\t".'<circle cx="'.$originX.'" cy="'.($originY+2*$radius).'" r="'.$radius.'" fill="'.$deg[$lenght-1]['stroke'].'" class="graph-pie"/>'."\n\t\t\t";
+		$i = 0;
+		while ($i <= $lenght-1) { 
+			if ($deg[$i]['val'] != 0) {
+				//Tooltips
+				if($tooltips == true) {
+					$return .= "\n\t\t".'<g class="graph-active">';
+				}
+				$color = $this->__genColor();
+				$return .= "\n\t\t\t".'<circle cx="'.$originX.'" cy="'.($originY+2*$radius).'" r="'.$radius.'" fill="'.$color.'" class="graph-pie"/>'."\n\t\t\t";
+				if(isset($legends) && !empty($legends)) {
+					$tmp = $legends[$i]['label'];
+					$legends[$this->recursive_array_search($deg[$i]['label'],$legends)]['label'] = $tmp;
+					$legends[$i]['stroke'] = $color;
+					$legends[$i]['label'] = $deg[$i]['label'];
+				}
 
-		if ($deg[0]['val'] != 0 && $diskLegends == true) {
-			$return .= "\n\t\t\t".'<path d=" M '.$originX.' '.($originY+2*$radius).' L '.$originX.' '.($originY+10).'" class="graph-line" stroke="#a1a1a1" stroke-opacity="0.3" stroke-dasharray="2,2,2" marker-end="url(#Triangle)"/>';
+				$return .= "\n\t\t\t".'<path d=" M '.$originX.' '.($originY+2*$radius).' L '.$originX.' '.($originY+10).'" class="graph-line" stroke="darkgrey" stroke-opacity="0.5" stroke-dasharray="2,2,2" marker-end="url(#Triangle)"/>';
 
-			$return .= "\n\t\t\t".'<text x="'.$originX.'" y="'.$originY.'" class="graph-legend" stroke="#a1a1a1" stroke-opacity="0.3">'.($diskLegendsType == 'label' ? $deg[0]['label'] : ($diskLegendsType == 'pourcent' ? ($deg[0]['pourcent']*100).'%' : $deg[0]['val'])).'</text>'."\n\t\t\t";
+				$return .= "\n\t\t\t".'<text x="'.$originX.'" y="'.$originY.'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">'.($diskLegendsType == 'label' ? $deg[$i]['label'] : ($diskLegendsType == 'pourcent' ? ($deg[$i]['pourcent']*100).'%' : $deg[$i]['val'])).'</text>'."\n\t\t\t";
+				
+				//End tooltips
+				if($tooltips == true) {
+					$return .= '<title class="graph-tooltip">'.$deg[$i]['tooltipLegend'].$deg[$i]['label'].' : '.$deg[$i]['val'].'</title>';
+					$return .= "\n\t\t".'</g>';
+				}
+				$i = $deg[$i]['label'];
+				break;
+			}
+			$i++;
 		}
-
-		//End tooltips
-		if($tooltips == true && $deg[0]['val'] != 0) {
-			$return .= '<title class="graph-tooltip">'.$deg[0]['tooltipLegend'].$deg[0]['label'].' : '.$deg[0]['val'].'</title>';
-		}
-		if($tooltips == true && $deg[0]['val'] == 0 && $deg[1]['val'] != 0) {
-			$return .= '<title class="graph-tooltip">'.$deg[1]['tooltipLegend'].$deg[1]['label'].' : '.$deg[1]['val'].'</title>';
-		}
-		if($tooltips == true) {
-			$return .= "\n\t\t".'</g>';
-		}
+		$tmp = array(); 
+		foreach($legends as &$ma) 
+		    $tmp[] = &$ma['label']; 
+		array_multisort($tmp, $legends); 
 
 		foreach ($deg as $key => $value) {
 
@@ -788,43 +863,33 @@ class phpGraph {
 				if($total > 0.75 && $total < 1) {
 					$arc = 1;
 					$gap = ($radius/4);
-					$gapTextX = -($radius/3)-10;
+					$gapTextX = -($radius/4);
 					$gapTextY = ($radius/4)-10;
 				}
 
-				$return .= "\n\t\t\t".'<path d="M '.$originX.' '.($originY + $radius).'  A '.$radius.' '.$radius.'  0 '.$arc.' 1 '.($originX + $cos).' '.($originY + 2*$radius + $sin).' L '.$originX.' '.($originY+2*$radius).' z" fill="'.$deg[($key < ($lenght-1) ? $key+1 : $key)]['stroke'].'" class="graph-pie"/>'."\n\t\t\t";
+				$return .= "\n\t\t\t".'<path d="M '.$originX.' '.($originY + $radius).'  A '.$radius.' '.$radius.'  0 '.$arc.' 1 '.($originX + $cos).' '.($originY + 2*$radius + $sin).' L '.$originX.' '.($originY+2*$radius).' z" fill="'.($key < ($lenght-1) ? $deg[ $key+1]['stroke'] : $legends[0]['stroke']).'" class="graph-pie"/>'."\n\t\t\t";
 
-				if ($key < ($lenght-1) && $deg[$key+1]['val'] != 0 && $diskLegends == true) {
-					$return .= "\n\t\t\t".'<path d=" M '.($originX+$cos).' '.($originY+2*$radius + $sin).' L '.($originX + $cosLeg).' '.($originY + 2*$radius + $sinLeg + $gap).'" class="graph-line" stroke="#a1a1a1" stroke-opacity="0.3"  stroke-dasharray="2,2,2" marker-end="url(#Triangle)"/>';
+				if ($key < ($lenght-1) && $deg[$key+1]['val'] != 0 && $diskLegends == true && $deg[$key+1]['label'] != $i) {
+					$return .= "\n\t\t\t".'<path d=" M '.($originX+$cos).' '.($originY+2*$radius + $sin).' L '.($originX + $cosLeg).' '.($originY + 2*$radius + $sinLeg + $gap).'" class="graph-line" stroke="darkgrey" stroke-opacity="0.5"  stroke-dasharray="2,2,2" marker-end="url(#Triangle)"/>';
 
-					$return .= "\n\t\t\t".'<text x="'.($originX + $cosLeg + $gapTextX).'" y="'.($originY + 2*$radius + $sinLeg + $gapTextY).'" class="graph-legend" stroke="#a1a1a1" stroke-opacity="0.3">'.($diskLegendsType == 'label' ? $deg[$key+1]['label'] : ($diskLegendsType == 'pourcent' ? ($deg[$key+1]['pourcent']*100).'%' : $deg[$key+1]['val'])).'</text>'."\n\t\t\t";
+					$return .= "\n\t\t\t".'<text x="'.($originX + $cosLeg + $gapTextX).'" y="'.($originY + 2*$radius + $sinLeg + $gapTextY).'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">'.($diskLegendsType == 'label' ? $deg[$key+1]['label'] : ($diskLegendsType == 'pourcent' ? ($deg[$key+1]['pourcent']*100).'%' : $deg[$key+1]['val'])).'</text>'."\n\t\t\t";
 				}
 				//End tooltips
 				if($tooltips == true && $key < ($lenght-1)) {
 					$return .= '<title class="graph-tooltip">'.$deg[$key+1]['tooltipLegend'].$deg[$key+1]['label'].' : '.$deg[$key+1]['val'].'</title>'."\n\t\t".'</g>';
 				}
 		}
-		$i = 0;
-		if (isset($legends) && !empty($legends)) {
+
+		if (isset($legends) && !empty($legends) && !isset($notDisplayLegends)) {
 			$leg = "\t".'<g class="graph-legends">';
-			if (!is_array($legends)) {
-				$legends = array(0 => $legends);
-			}
-			
 			foreach ($legends as $key => $value) {
-				if (isset($deg[$key]['stroke'])) {
-					$leg .= "\n\t\t".'<rect x="50" y="'.(4*$radius+$titleHeight+$paddingTop+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$deg[$lenght-1-$i]['stroke'].'" class="graph-legend-stroke"/>';
-				}
-				$leg .= "\n\t\t".'<text x="70" y="'.(4*$radius+$titleHeight+$paddingTop+40+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value.'</text>';
-				$i++;
+				$leg .= "\n\t\t".'<rect x="50" y="'.(4*$radius+$titleHeight+$paddingTop+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.((is_array($stroke) && isset($stroke[$key]) ) ? $stroke[$key] : $value['stroke']).'" class="graph-legend-stroke"/>';
+				$leg .= "\n\t\t".'<text x="70" y="'.(4*$radius+$titleHeight+$paddingTop+40+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value['label'].'</text>';
 			}
 			$leg .= "\n\t".'</g>';
 
-		} else {
-			$leg = '';
+			$return .= $leg;
 		}
-
-		$return .= $leg;
 
 		return $return;
 	}
