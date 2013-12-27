@@ -230,7 +230,7 @@ $G = new phpGraph();
     //This is only to see code of the page. You can delet it.
     highlight_string(file_get_contents('samples.php'));
 
-    //Then we draw charts
+    // //Then we draw charts
     echo '<h1>Multi lines with histogram and pie</h1>';
 
     echo $G->draw($data,array(
@@ -270,7 +270,7 @@ $G = new phpGraph();
     echo '<h1>Multi lines filled with no legend nor tooltip. Gradient as background</h1>';
 
     echo $G->draw($data,array(
-            'steps' => 50,
+            //'steps' => 50,
             'filled' => true,
             'circles' => false,
             'gradient' => array('green', '#00FF00')
@@ -315,7 +315,7 @@ $G = new phpGraph();
             'filled' => true,
             'tooltips' => true,
             'type' => 'bar',
-            'steps' => 20
+            //'steps' => 20
             //'legends' => 'Nombre de patients par an'
         ));
     //Results above...
