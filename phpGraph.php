@@ -548,8 +548,8 @@ class phpGraph {
 			$coordonnees3 = 'x="'.($i * $stepX + 50).'" y="'.($HEIGHT + $unitY*($min-$value)).'"';
 			$coordonnees4 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($HEIGHT + $unitY*($min-$value)).'"';
 			//$min<0 et $value<0
-			$coordonnees5 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($HEIGHT + $unitY*($min-$value)).'"';
-			$coordonnees6 = 'x="'.($i * $stepX + 50).'" y="'.($HEIGHT + $unitY*($min-$value)).'"';
+			$coordonnees5 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($HEIGHT + $unitY*($min-$value) + $stepY).'"';
+			$coordonnees6 = 'x="'.($i * $stepX + 50).'" y="'.($HEIGHT + $unitY*($min-$value) + $stepY).'"';
 			//$min>=0 et $value == $max
 			$coordonnees7 = 'x="'.($i * $stepX + 50 - $stepX/2).'" y="'.($HEIGHT - $stepY).'"';
 			$coordonnees8 = 'x="'.($i * $stepX + 50).'" y="'.($paddingTop + $titleHeight).'"';
