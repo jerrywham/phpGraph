@@ -193,6 +193,7 @@ $d = array(
     "2012" => 125,
     "2013" => 76
 );
+//Be carefull, for stock graph, array structure must be the same as the array below
 $stock = array(
     'Jan' => array(
         'open' => 35,
