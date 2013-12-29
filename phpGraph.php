@@ -33,7 +33,7 @@ class phpGraph {
 		'circles' => true,// (bool) to show circles on graph (lines or histograms)
 		'stroke' => '#3cc5f1',// (string) color of lines by default. Use an array to personalize each line
 		'background' => "#ffffff",// (string) color of grid background. Don't use short notation (#fff) because of $this->__genColor();
-		'opacity' => '0.5',
+		'opacity' => '0.5',// (float) between 0 and 1
 		'gradient' => null,// (array) 2 colors from left to right
 		'titleHeight' => 0,// (int) Height of main title
 		'tooltipLegend' => '',// (string or array) Text display in tooltip with y value. Each text can be personalized using an array.
@@ -84,6 +84,10 @@ class phpGraph {
 	 */
 	public function draw($data,$options=array()) {
 		$return = '';
+
+		//We add 10 units in viewbox to display x legend correctly
+		$options['paddingLegendX'] = 10;
+
 		$options = array_merge($this->options,$options);
 
 		extract($options);
@@ -109,17 +113,28 @@ class phpGraph {
 			$tmp['type'] = array();
 			//For each diagrams with several lines/histograms
 			foreach ($data as $line => $datas) {
-				if (is_array($datas)) {
-					$arrayOfMin[] = min($datas);
-					$arrayOfMax[] = max($datas);
-					$arrayOfLenght[] = count($datas);
-					$labels = array_merge(array_keys($datas),$labels);
+				if ($type == 'stock' || (is_array($type) && in_array('stock',$type)) ) {
+					$arrayOfMin[] = isset($datas['min']) ? $datas['min']:0;
+					$arrayOfMax[] = isset($datas['max']) ?  $datas['max'] : 0;
+					$arrayOfLenght[] = count($data);
+					$labels = array_merge(array_keys($data),$labels);
 					if (is_string($type)) {
 						$tmp['type'][] = $type;
 					}
 					$multi = true;
 				} else {
-					$multi = false;
+					if (is_array($datas)) {
+						$arrayOfMin[] = min($datas);
+						$arrayOfMax[] = max($datas);
+						$arrayOfLenght[] = count($datas);
+						$labels = array_merge(array_keys($datas),$labels);
+						if (is_string($type)) {
+							$tmp['type'][] = $type;
+						}
+						$multi = true;
+					} else {
+						$multi = false;
+					}
 				}
 			}
 			if ($multi == true) {
@@ -128,10 +143,15 @@ class phpGraph {
 				}
 				unset($tmp);
 				$labels = array_unique($labels);
+
 				$min = min($arrayOfMin);
 				$max = max($arrayOfMax);
 				$lenght = max($arrayOfLenght);
-
+				if ($type == 'stock' || (is_array($type) && in_array('stock',$type)) ) {
+					array_unshift($labels,'');
+					$labels[] = '';
+					$lenght += 2;
+				}
 			} else {
 				$labels = array_keys($data);
 				$lenght = count($data);
@@ -152,6 +172,7 @@ class phpGraph {
 				$M =  $int.'.'.ceil($decimal/($l*10))*($l*10);
 				$steps = '0.'.$l*10;
 			}
+			$max = $M;
 			if (isset($options['steps']) && is_int($steps) ) {
 				$steps = $options['steps'];
 			}
@@ -162,11 +183,24 @@ class phpGraph {
 
 			//Size of canevas will be bigger than grid size to display legends
 			if ($responsive == true) {
-				$return .= "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="70%" height="70%" viewBox="0 0 '.($lenght*$stepX+$stepX).' '.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop).'">'."\n";
+				$return .= "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="100%" height="100%" viewBox="0 0 '.($lenght*$stepX+$stepX).' '.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop+$paddingLegendX).'" preserveAspectRatio="xMidYMid meet">'."\n";
 			} else {
-				$return .= "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="'.($lenght*$stepX+$stepX).'" height="'.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop).'" viewBox="0 0 '.($lenght*$stepX+$stepX).' '.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop).' ">'."\n";
+				$return .= "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="'.($lenght*$stepX+$stepX).'" height="'.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop).'" viewBox="0 0 '.($lenght*$stepX+$stepX).' '.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop+$paddingLegendX).'" preserveAspectRatio="xMidYMid meet">'."\n";
 			}
-
+			if ($type == 'stock' || (is_array($type) && in_array('stock',$type)) ) { 
+				$plotLimit = "\n\t".'<defs>';
+				$plotLimit .= "\n\t\t".'<g id="plotLimit">';
+				// $return .= "\n\t\t\t".'viewBox="0 0 50 50" refX="0" refY="1"';
+				// $return .= "\n\t\t\t".'markerUnits="strokeWidth"';
+				// $return .= "\n\t\t\t".'markerWidth="10" markerHeight="1"';
+				// $return .= "\n\t\t\t".'fill="blue" fill-opacity="1"';
+				// $return .= "\n\t\t\t".'orient="auto">';
+				$plotLimit .= "\n\t\t\t".'<path d="M 0 0 L 10 0" class="graph-line" stroke="" stroke-opacity="1"/>';
+				$plotLimit .= "\n\t\t".'</g>';
+				// $return .= "\n\t\t".'</marker>';
+				$plotLimit .= "\n\t".'</defs>'."\n";
+				 
+			}
 			if (is_array($gradient)) {
 				$id = 'BackgroundGradient'.rand();
 				$return .= "\n\t".'<defs>';
@@ -181,7 +215,7 @@ class phpGraph {
 			$return .= "\t".'<rect x="50" y="'.($paddingTop+$titleHeight).'" width="'.$width.'" height="'.$height.'" class="graph-stroke" fill="'.$background.'" fill-opacity="1"/>'."\n";
 			if (isset($title)) {
 				$return .= "\t".'<title class="graph-tooltip">'.$title.'</title>'."\n";
-				$return .= "\t".'<text x="250" y="40" text-anchor="start" class="graph-title">'.$title.'</text>'."\n";
+				$return .= "\t".'<text x="'.(($width/2)+50).'" y="'.$titleHeight.'" text-anchor="middle" class="graph-title">'.$title.'</text>'."\n";
 			}
 			//Legends x axis
 			$x .= "\t".'<g class="graph-x">'."\n";
@@ -210,11 +244,12 @@ class phpGraph {
 	 			} else {
 	 				$stepY = $HEIGHT - ($unitY*$i);
 	 			}
-	 				
-	 			$y .= "\t\t".'<text x="40" y="'.$stepY.'" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle">'.($i).'</text>'."\n";
-
-				//Horizontal grid
-				$gridH .= "\t\t".'<path d="M 50 '.$stepY.' H '.($width+50).'"/>'."\n" ;
+	 		
+	 			if ($stepY >= ($titleHeight+$paddingTop+$paddingLegendX)) {
+	 				$y .= "\t\t".'<text x="40" y="'.$stepY.'" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle">'.($i).'</text>'."\n";
+					//Horizontal grid
+					$gridH .= "\t\t".'<path d="M 50 '.$stepY.' H '.($width+50).'"/>'."\n" ;
+				}
 			}
 			$y .= "\t".'</g>'."\n";
 
@@ -252,9 +287,13 @@ class phpGraph {
 						break;
 				}
 			} else {
+				$i = 1;
 				foreach ($data as $line => $datas) {
-					if (!isset($type[$line]) && !is_string($type)) {
+					if (!isset($type[$line]) && !is_string($type) && is_numeric($line)) {
 						$type[$line] = 'line';
+					}
+					if (!isset($type[$line]) && !is_string($type) && !is_numeric($line)) {
+						$type[$line] = 'stock';
 					}
 					if (is_string($options['type'])) {
 						$type = array();
@@ -268,7 +307,7 @@ class phpGraph {
 					if (!isset($stroke[$line])) {
 						$stroke[$line] = $this->__genColor();
 					}
-					$options['stroke'] = $stroke[$line];
+					$options['stroke'] = $STROKE = $stroke[$line];
 					$options['fill'] = $stroke[$line];
 					switch ($type[$line]) {
 						case 'line':
@@ -276,6 +315,11 @@ class phpGraph {
 							break;
 						case 'bar':
 							$return .= $this->__drawBar($datas,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options);
+							break;
+						case 'stock':
+							$return .= str_replace(array('id="plotLimit"','stroke=""'), array('id="plotLimit'.$line.'"','stroke="'.$stroke[$line].'"'), $plotLimit);
+							$return .= $this->__drawStock($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options,$i,$labels);
+							$i++;
 							break;
 						case 'ring':
 							$options['subtype'] = 'ring';
@@ -804,7 +848,7 @@ class phpGraph {
 
 
 		//Size of canevas will be bigger than grid size to display legends
-		$return = "\n".'<svg width="'.(2*$radius+400).'" height="'.(2*$radius+100+$titleHeight+$paddingTop+$heightLegends).'" viewBox="0 0 '.(2*$radius+400).' '.(2*$radius+100+$titleHeight+$paddingTop+$heightLegends).'" xmlns="http://www.w3.org/2000/svg" version="1.1">'."\n";
+		$return = "\n".'<svg width="100%" height="100%" viewBox="0 0 '.(2*$radius+400).' '.(2*$radius+100+$titleHeight+$paddingTop+$heightLegends).'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" version="1.1">'."\n";
 		$return .= "\n\t".'<defs>';
 		$return .= "\n\t\t".'<marker id="Triangle"';
 		$return .= "\n\t\t\t".'viewBox="0 0 10 10" refX="0" refY="5"';
@@ -937,6 +981,65 @@ class phpGraph {
 			$return .= '<circle cx="'.$originX.'" cy="'.($originY+2*$radius).'" r="'.($radius/2).'" fill="'.$background.'" class="graph-pie"/>';
 		}
 
+		return $return;
+	}
+	
+	public function __drawStock($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options,$i,$labels) {
+		$error = null;
+		if (!isset($data[$labels[$i]]['open'])) { 
+			$error[] = 'open';
+		}
+		if (!isset($data[$labels[$i]]['close'])) { 
+			$error[] = 'close';
+		}
+		if (!isset($data[$labels[$i]]['max'])) { 
+			$error[] = 'max';
+		}
+		if (!isset($data[$labels[$i]]['min'])) { 
+			$error[] = 'min';
+		}
+		if ($error) {
+			$return = "\t\t".'<path id="chemin" d="M '.($i * $stepX + 50).' '.($HEIGHT-$height+10).' V '.$height.'" class="graph-line" stroke="transparent" fill="#fff" fill-opacity="0"/>'."\n";
+			$return .= "\t\t".'<text><textPath xlink:href="#chemin">Error : "';
+			foreach ($error as $key => $value) {
+				$return .= $value.(count($error)>1? ' ' : '');
+			}
+			$return .= '" missing</textPath></text>'."\n";
+			return $return;
+		}
+		$options = array_merge($this->options,$options);
+
+		extract($options);
+
+		$return = '';
+		if($data[$labels[$i]]['close']<$data[$labels[$i]]['open']) {
+			
+			$return .= "\n\t".'<rect x="'.($i * $stepX + 50 - $stepX/4).'" y="'.($HEIGHT - $unitY*$data[$labels[$i]]['open']).'" width="'.($stepX/2).'" height="'.($unitY*$data[$labels[$i]]['open'] - ($unitY*$data[$labels[$i]]['close'])).'" class="graph-bar" fill="'.$stroke.'" fill-opacity="1"/>';
+		}
+		//Limit Up
+		$return .= "\n\t".'<path d="M'.($i * $stepX + 50).' '.($HEIGHT - $unitY*$data[$labels[$i]]['close']).'  L'.($i * $stepX + 50).' '.($HEIGHT-$unitY*$data[$labels[$i]]['max']).' " class="graph-line" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>';
+		$return .= '<use xlink:href="#plotLimit'.$labels[$i].'" transform="translate('.($i * $stepX + 50 - 5).','.($HEIGHT-$unitY*$data[$labels[$i]]['max']).')"/>';
+		//Limit Down
+		$return .= "\n\t".'<path d="M'.($i * $stepX + 50).' '.($HEIGHT - $unitY*$data[$labels[$i]]['open']).'  L'.($i * $stepX + 50).' '.($HEIGHT-$unitY*$data[$labels[$i]]['min']).' " class="graph-line" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>';
+		$return .= '<use xlink:href="#plotLimit'.$labels[$i].'" transform="translate('.($i * $stepX + 50 - 5).','.($HEIGHT-$unitY*$data[$labels[$i]]['min']).')"/>';
+		if($tooltips == true) {
+			//Open
+			$return .= "\n\t\t".'<g class="graph-active">';
+			$return .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($HEIGHT - $unitY*$data[$labels[$i]]['open']).'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
+			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['open'].'</title>'."\n\t\t".'</g>';
+			//Close
+			$return .= "\n\t\t".'<g class="graph-active">';
+			$return .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($HEIGHT - $unitY*$data[$labels[$i]]['close']).'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
+			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['close'].'</title>'."\n\t\t".'</g>';
+			//Max
+			$return .= "\n\t\t".'<g class="graph-active">';
+			$return .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($HEIGHT - $unitY*$data[$labels[$i]]['max']).'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
+			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['max'].'</title>'."\n\t\t".'</g>';
+			//Min
+			$return .= "\n\t\t".'<g class="graph-active">';
+			$return .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($HEIGHT - $unitY*$data[$labels[$i]]['min']).'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
+			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['min'].'</title>'."\n\t\t".'</g>';
+		}
 		return $return;
 	}
 	/**
