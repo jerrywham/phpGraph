@@ -257,37 +257,69 @@ $stock = array(
         'max' => 67)
     );
 $stock2 = array(
-    "8h" => array(
+    "Série 1" => array(
         'open' => 34,
         'close' => 42,
         'min' => 27,
         'max' => 45),
-    "10h" => array(
+    "Série 2" => array(
         'open' => 55,
         'close' => 25,
         'min' => 14,
         'max' => 59),
-    "12h" => array(
+    "Série 3" => array(
         'open' => 15,
         'close' => 40,
         'min' => 12,
         'max' => 47),
-    "14h" => array(
+    "Série 4" => array(
         'open' => 62,
         'close' => 38,
         'min' => 25,
         'max' => 65),
-    "16h" => array(
+    "Série 5" => array(
         'open' => 38,
         'close' => 49,
         'min' => 32,
         'max' => 64),
-    "18h" => array(
-        'open' => 42,
-        'close' => 36,
+    "Série 6" => array(
+        'open' => 40,
+        'close' => 40,
         'min' => 32,
         'max' => 48)
-);
+    );
+$stock3 = array(
+    "aplasie" => array(
+        'open' => 1.04,
+        'close' => 1.04,
+        'min' => 0.87,
+        'max' => 1.24),
+    "thrombopénie" => array(
+        'open' => 1.09,
+        'close' => 1.09,
+        'min' => 0.95,
+        'max' => 1.25),
+    "anorexie" => array(
+        'open' => 1.02,
+        'close' => 1.02,
+        'min' => 0.86,
+        'max' => 1.21),
+    "mucites" => array(
+        'open' => 0.87,
+        'close' => 0.87,
+        'min' => 0.71,
+        'max' => 1.06),
+    "leucopénie" => array(
+        'open' => 0.90,
+        'close' => 0.90,
+        'min' => 0.1,
+        'max' => 1.34),
+    "neutropénie" => array(
+        'open' => 1,
+        'close' => 1,
+        'min' => 0.78,
+        'max' => 1.20)
+    );
 //All options available
 $options = array(
     'width' => null,// (int) width of grid
@@ -325,7 +357,7 @@ $G = new phpGraph();
     <div class="draw"><!-- Use this div to wrap your svg -->
     <?php
     //This is only to see code of the page. You can delet it.
-    highlight_string(file_get_contents('samples.php'));
+    //highlight_string(file_get_contents('samples.php'));
 
     // //Then we draw charts
     echo '<h1>Multi lines with histogram and pie</h1>';
@@ -419,15 +451,53 @@ $G = new phpGraph();
         ));
 
     echo '<h1>Draw stock charts</h1>';
+    echo '<h2>Vertical stock charts</h2>';
 
     echo $G->draw($stock,array(
         'type' => 'stock',
         'tooltips' => true));
-
+    echo '<h2>Vertical stock charts with legend</h2>';
     echo $G->draw($stock2,array(
         'type' => 'stock',
         'tooltips' => true,
-        'title' => 'My stock dkflflqs sqdlkdflk,slkds,f'
+        'legends' => array(
+            '0'=>'Serie 1',
+            '1'=>'Serie 2',
+            '2'=>'Serie 3',
+            '3'=>'Serie 4',
+            '4'=>'Serie 5',
+            '5'=>'Serie 6',
+            ),
+        )
+    );
+
+    echo '<h2>Horizontal stock charts</h2>';
+    echo '<h2>Horizontal stock charts with legend</h2>';
+    echo $G->draw($stock2,array(
+        'type' => 'h-stock',
+        'tooltips' => true,
+        'legends' => array(
+            '0'=>'Serie 1',
+            '1'=>'Serie 2',
+            '2'=>'Serie 3',
+            '3'=>'Serie 4',
+            '4'=>'Serie 5',
+            '5'=>'Serie 6',
+            ),
+        )
+    );
+    echo $G->draw($stock3,array(
+        'type' => 'h-stock',
+        'tooltips' => true,
+        'title' => 'Effets secondaires liés au traitement (IC à 95%)',
+        'legends' => array(
+            '0'=>'aplasie 1.04 (0.87 à 1.24)',
+            '1'=>'thrombopénie 1.09 (0.95 à 1.25)',
+            '2'=>'anorexie 1.02 (0.86 à 1.21)',
+            '3'=>'mucites 0.87 (0.71 à 1.06)',
+            '4'=>'leucopénie 0.90 (0.1 à 1.34)',
+            '5'=>'neutropénie 1 (0.78 à 1.20)',
+            ),
         )
     );
     //Results above...
