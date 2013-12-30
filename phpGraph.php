@@ -42,6 +42,7 @@ class phpGraph {
 		'radius' => 100,// (int) Radius of pie
 		'diskLegends' => false,// (bool) to display legends around a pie
 		'diskLegendsType' => 'label',// (string) data, pourcent or label to display around a pie as legend
+  		'responsive' => true,// (bool) to avoid svg to be responsive (dimensions fixed)
 	);
 	
 	public $colors = array();
