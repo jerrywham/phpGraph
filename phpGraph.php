@@ -486,7 +486,7 @@ class phpGraph {
 		return $return;
 	}
 
-	/**
+		/**
 	 * To draw lines
 	 * @param $data array Unidimensionnal array
 	 * @param $height integer Height of grid
@@ -515,16 +515,20 @@ class phpGraph {
 		$path = "\t\t".'<path d="';
 		foreach ($data as $label => $value) {
 			
+			//$min<0 or $min>=0
+			$coordonneesCircle1 = 'cx="'.($i * $stepX + 50).'" cy="'.($HEIGHT + $unitY*($min-$value)).'"';
+			//$min>=0 
+			$coordonneesCircle2 = 'cx="'.($i * $stepX + 50).'" cy="'.($HEIGHT + $unitY*($min-$value) - $value).'"';
+			//$min == $value
+			$coordonneesCircle3 = 'cx="'.($i * $stepX + 50).'" cy="'.($HEIGHT + $unitY*($min-$value) - $value*$unitY).'"';
+			
 			//$min<0 
 			$coordonnees1 = ($i * $stepX + 50).' '.($HEIGHT + $unitY*($min-$value));
-			$coordonnees2 = 'x="'.($i * $stepX + 50).'" y="'.($HEIGHT + $unitY*($min-$value)).'"';
 			//$min>=0
-			$coordonnees3 = ($i * $stepX + 50).' '.($HEIGHT + $unitY*($min-$value) - $value);
-			$coordonnees4 = 'x="'.($i * $stepX + 50).'" y="'.($HEIGHT + $unitY*($min-$value)).'"';
-			$coordonnees5 = 'x="'.($i * $stepX + 50).'" y="'.($HEIGHT + $unitY*($min-$value) - $value).'"';
+			$coordonnees2 = ($i * $stepX + 50).' '.($HEIGHT + $unitY*($min-$value) - $value);
 			//$min == $value
-			$coordonnees6 = ($i * $stepX + 50).' '.($HEIGHT + $unitY*($min-$value) - $value*$unitY);
-			$coordonnees7 = 'x="'.($i * $stepX + 50).'" y="'.($HEIGHT + $unitY*($min-$value) - $value*$unitY).'"';
+			$coordonnees3 = ($i * $stepX + 50).' '.($HEIGHT + $unitY*($min-$value) - $value*$unitY);
+
 			//Tooltips
 			if($tooltips == true) {
 				$c .= "\n\t\t".'<g class="graph-active">';
@@ -536,21 +540,21 @@ class phpGraph {
 						if ($min<=0) {
 							$path .= 'M '.$coordonnees1.' L';
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees2).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 						} else {
-							$path .= 'M '.$coordonnees6.' L';
+							$path .= 'M '.$coordonnees3.' L';
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees7).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle3.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 						}
 					} else {
 						if ($min<=0) {
 							$path .= "\n\t\t\t\t".$coordonnees1;
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees2).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 						} else {
-							$path .= "\n\t\t\t\t".$coordonnees3;
+							$path .= "\n\t\t\t\t".$coordonnees2;
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees4).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 						}
 					}
 				} else {
@@ -558,32 +562,32 @@ class phpGraph {
 						if ($min<=0) {
 							$path .= 'M '.$coordonnees1.' L';
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees2).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 						} else {
-							$path .= 'M '.$coordonnees3.' L';
+							$path .= 'M '.$coordonnees2.' L';
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees4).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 						}
 					} else {
 						if ($i != $lenght-1) {
 							if ($min<=0) {
 								$path .= "\n\t\t\t\t".$coordonnees1;
 								//Tooltips and circles
-								$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees2).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+								$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 							} else {
-								$path .= "\n\t\t\t\t".$coordonnees3;
+								$path .= "\n\t\t\t\t".$coordonnees2;
 								//Tooltips and circles
-								$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees5).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+								$c .= "\n\t\t\t".'<circle '.$coordonneesCircle2.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 							}
 						} else {
 							if ($min<=0) {
 								$path .= "\n\t\t\t\t".$coordonnees1;
 								//Tooltips and circles
-								$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees2).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+								$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 							} else {
-								$path .= "\n\t\t\t\t".$coordonnees3;
+								$path .= "\n\t\t\t\t".$coordonnees2;
 								//Tooltips and circles
-								$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees4).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+								$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 							}
 						}
 					}
@@ -595,10 +599,9 @@ class phpGraph {
 					//Tooltips and circles
 					$c .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($titleHeight + 2 * $paddingTop).'" r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 				} else {
-					//$path .= "\n\t\t\t\t".($i * $stepX + 50).' '.($titleHeight + 2 * $paddingTop);
 					$path .= "\n\t\t\t\t".$coordonnees1;
 					//Tooltips and circles
-					$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees2).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+					$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 				}
 				
 			}
@@ -636,7 +639,6 @@ class phpGraph {
 		}
 		return $return;
 	}
-
 	/**
 	 * To draw histograms
 	 * @param $data array Unidimensionnal array
