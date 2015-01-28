@@ -46,25 +46,28 @@ Options available :
   
      //All options available
     $options = array(
-      'width' => null,// (int) width of grid
-      'height' => null,// (int) height of grid
-      'paddingTop' => 10,// (int)
-      'type' => 'line',// (string) "bar" or "pie"
-      'steps' => 5,// (int) 2 graduations on y-axis are separated by $steps units
-      'filled' => true,// (bool) to fill lines/histograms/disks
-      'tooltips' => false,// (bool) to show tooltips
-      'circles' => true,// (bool) to show circles on graph (lines or histograms)
-      'stroke' => '#3cc5f1',// (string) color of lines by default. Use an array to personalize each line
-      'background' => "#ffffff",// (string) color of grid background. Don't use short notation (#fff) because of $this->__genColor();
-      'gradient' => null,// (array) 2 colors from left to right
-      'titleHeight' => 0,// (int) Height of main title
-      'tooltipLegend' => '',// (string or array) Text display in tooltip with y value. Each text can be personalized using an array.
-      'legends' => '',// (string or array) General legend for each line/histogram/disk displaying under diagram
-      'title' => null,// (string) Main title. Title wil be displaying in a tooltip too.
-      'radius' => 100,// (int) Radius of pie
-      'diskLegends' => false,// (bool) to display legends around a pie
-      'diskLegendsType' => 'label',// (string) "data", "pourcent" or "label" to display around a pie as legend
-      'responsive' => true,// (bool) to avoid svg to be responsive (dimensions fixed)
+    'width' => null,// (int) width of grid
+    'height' => null,// (int) height of grid
+    'paddingTop' => 10,// (int)
+    'type' => 'line',// (string) line, bar, pie, ring, stock or h-stock (todo curve)
+    'steps' => null,// (int) 2 graduations on y-axis are separated by $steps units. "steps" is automatically calculated but we can set the value with integer. No effect on stock and h-stock charts
+    'filled' => true,// (bool) to fill lines/histograms/disks
+    'tooltips' => false,// (bool) to show tooltips
+    'circles' => true,// (bool) to show circles on graph (lines or histograms). No effect on stock and h-stock charts
+    'stroke' => '#3cc5f1',// (string) color of lines by default. Use an array to personalize each line
+    'background' => "#ffffff",// (string) color of grid background. Don't use short notation (#fff) because of $this->__genColor();
+    'opacity' => '0.5',// (float) between 0 and 1. No effect on stock and h-stock charts
+    'gradient' => null,// (array) 2 colors from left to right
+    'titleHeight' => 0,// (int) Height of main title
+    'tooltipLegend' => null,// (string or array) Text display in tooltip with y value. Each text can be personalized using an array. No effect on stock and h-stock charts
+    'legends' => null,// (string or array or bool) General legend for each line/histogram/disk displaying under diagram
+    'title' => null,// (string) Main title. Title wil be displaying in a tooltip too.
+    'radius' => 100,// (int) Radius of pie
+    'diskLegends' => false,// (bool) to display legends around a pie
+    'diskLegendsType' => 'label',// (string) data, pourcent or label to display around a pie as legend
+    'diskLegendsLineColor' => 'darkgrey',// (string) color of lines which join pie to legends
+    'responsive' => true,// (bool) to avoid svg to be responsive (dimensions fixed)
+    'paddingLegendX' => 10,//We add 10 units in viewbox to display x legend correctly
     );
     
 See [samples.php](http://www.ecyseo.net/?static8/phpgraph) for more details.
@@ -74,3 +77,11 @@ See [samples.php](http://www.ecyseo.net/?static8/phpgraph) for more details.
 Licence :
 ---------
 [CONTRAT DE LICENCE DE LOGICIEL LIBRE CeCILL version 2.1](http://www.cecill.info/licences/Licence_CeCILL_V2.1-fr.txt)
+
+Change log :
+---------
+ # 2015-01-28
+  * [+] css file is not mandatory. Style is included in svg and can be modified via setCss() method
+  * [+] new option : diskLegendsLineColor
+  * [BUG] colors of legends
+  * [BUG] position of lines between pie and labels

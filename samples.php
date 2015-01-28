@@ -147,8 +147,8 @@ $data = array(
         "2013" => 54
     ),
     "3" => array(
-        "2000" => 0,
-        "2002" => 0,
+        "2001" => 0,
+        "2002" => 10,
         "2003" => 3,
         "2004" => 1,
         "2005" => 5,
@@ -159,7 +159,7 @@ $data = array(
         "2010" => 8,
         "2011" => 9,
         "2012" => 5,
-        "2013" => 2
+        "2013" => 20
     ),
     "4" => array(
         "2000" => 0,
@@ -357,9 +357,13 @@ $G = new phpGraph();
     <div class="draw"><!-- Use this div to wrap your svg -->
     <?php
     //This is only to see code of the page. You can delet it.
-    //highlight_string(file_get_contents('samples.php'));
+   // highlight_string(file_get_contents('samples.php'));
 
     // //Then we draw charts
+    echo $G->draw($data[0],array(
+            'type' => 'curve'
+        )
+    );
     echo '<h1>Multi lines with histogram and pie</h1>';
 
     echo $G->draw($data,array(
@@ -403,7 +407,7 @@ $G = new phpGraph();
             //'steps' => 50,
             'filled' => true,
             'circles' => false,
-            'gradient' => array('green', '#00FF00')
+            'gradient' => array('green','yellow')
         )
     );
 
@@ -437,7 +441,8 @@ $G = new phpGraph();
             'legends' => true,
             'diskLegends' => true,
             'diskLegendsType' => 'pourcent',
-            'gradient' => array('grey', 'white')
+            'gradient' => array('grey', 'white'),
+            'diskLegendsLineColor' => '#fd4263'
         )
     );
     echo $G->draw($d,array(
@@ -445,9 +450,9 @@ $G = new phpGraph();
             'filled' => true,
             'opacity'=>0.9,
             'tooltips' => true,
-            'type' => 'line',
-            //'steps' => 20
-            //'legends' => 'Nombre de patients par an'
+            'type' => 'pie',
+            'legends' => 'Nombre de patients par an',
+            'diskLegends' => true
         ));
 
     echo '<h1>Draw stock charts</h1>';
@@ -500,9 +505,17 @@ $G = new phpGraph();
             ),
         )
     );
+    $disk = array('occupe'=> 40,'libre'=>60);
+    echo $G->draw($disk,array(
+        'type' => 'pie',
+        'diskLegends'=>true,
+        'stroke' => array(
+            0=>'red',
+            1=>'green')
+    ))
     //Results above...
     ?>
-
+    
     </div>
 </body>
 </html>

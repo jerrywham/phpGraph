@@ -1,4 +1,5 @@
 <?php 
+
 # ------------------ BEGIN LICENSE BLOCK ------------------
 #	  ___________________________________________________
 #    |													|
@@ -12,17 +13,82 @@
 #    |	/				  \	 |	  |	   |	|			|
 #    |/____________________\_|____|____|____|___________|
 #
-# @update     2013-12-27
-# @copyright  2013 Cyril MAGUIRE
+# @update     2015-01-28
+# @copyright  2013-2015 Cyril MAGUIRE
 # @licence    http://www.cecill.info/licences/Licence_CeCILL_V2.1-fr.txt CONTRAT DE LICENCE DE LOGICIEL LIBRE CeCILL version 2.1
 # @link       http://jerrywham.github.io/phpGraph/
-# @version    1.1
+# @version    1.2
 #
 # ------------------- END LICENSE BLOCK -------------------
+/**
+ * @package    SIGesTH
+ * @author     MAGUIRE Cyril <contact@ecyseo.net>
+ * @copyright  2009-2015 Cyril MAGUIRE, <contact@ecyseo.net>
+ * @license    Licensed under the CeCILL v2.1 license. http://www.cecill.info/licences.fr.html
+ */
 class phpGraph {
 
-	public $options = array(
-		'responsive' => true,
+	# Basic css style
+	protected $css = '
+		.draw {
+			width:70%;/*Adjust this value to resize svg automatically*/
+			margin:auto;
+		}
+		svg {/*width and height of svg is 100% of dimension of its parent (draw class here)*/
+			display: block;
+			margin:auto;
+			margin-bottom: 50px;
+		}
+		.graph-title {
+			stroke-width:4;
+			stroke:transparent;
+			fill:#000033;
+			font-size: 1.2em;
+		}
+		.graph-grid {
+			stroke-width:1;
+			stroke:#c4c4c4;
+		}
+		.graph-stroke {
+			stroke-width:2;
+			stroke:#424242;
+		}
+		.graph-legends {}
+		.graph-legend {}
+		.graph-legend-stroke {}
+		.graph-line {
+			stroke-linejoin:round;
+			stroke-width:2;
+		}
+		.graph-fill {
+			stroke-width:0;
+		}
+		.graph-bar {}
+		.graph-point {
+			stroke-width:1;
+			fill:#fff;
+			fill-opacity:1;
+			stroke-opacity:1;
+		}
+		.graph-point-active:hover {
+			stroke-width:5;
+			transition-duration:.9s;
+			cursor: pointer;
+		}
+		 title.graph-tooltip {
+			background-color:#d6d6d6;
+		}
+		.graph-pie {
+			cursor: pointer;
+			stroke-width:1;
+			stroke:#fff;
+		}
+		text {
+			fill:#000;
+		}
+	';
+
+	protected $options = array(
 		'width' => null,// (int) width of grid
 		'height' => null,// (int) height of grid
 		'paddingTop' => 10,// (int)
@@ -36,16 +102,20 @@ class phpGraph {
 		'opacity' => '0.5',// (float) between 0 and 1. No effect on stock and h-stock charts
 		'gradient' => null,// (array) 2 colors from left to right
 		'titleHeight' => 0,// (int) Height of main title
-		'tooltipLegend' => '',// (string or array) Text display in tooltip with y value. Each text can be personalized using an array. No effect on stock and h-stock charts
-		'legends' => '',// (string or array or bool) General legend for each line/histogram/disk displaying under diagram
+		'tooltipLegend' => null,// (string or array) Text display in tooltip with y value. Each text can be personalized using an array. No effect on stock and h-stock charts
+		'legends' => null,// (string or array or bool) General legend for each line/histogram/disk displaying under diagram
 		'title' => null,// (string) Main title. Title wil be displaying in a tooltip too.
 		'radius' => 100,// (int) Radius of pie
 		'diskLegends' => false,// (bool) to display legends around a pie
 		'diskLegendsType' => 'label',// (string) data, pourcent or label to display around a pie as legend
-  		'responsive' => true,// (bool) to avoid svg to be responsive (dimensions fixed)
+		'diskLegendsLineColor' => 'darkgrey',// (string) color of lines which join pie to legends
+		'responsive' => true,// (bool) to avoid svg to be responsive (dimensions fixed)
+		'paddingLegendX' => 10,//We add 10 units in viewbox to display x legend correctly
 	);
+	# authorized types
+	protected $types = array('line','line','bar','pie','ring','stock','h-stock');
 	
-	public $colors = array();
+	//protected $colors = array();
 
 	/**
 	 * Constructor
@@ -67,37 +137,58 @@ class phpGraph {
 		if (!empty($height)) {
 			$this->options['height'] = $height;
 		}
-		if (is_string($this->options['stroke'])) {
-			$this->options['stroke'] = array(0=>$this->options['stroke']);
+		if (is_string($this->options['stroke']) && substr($this->options['stroke'], 0,1) == '#') {
+			$this->options['stroke'] = array(0=>substr($this->options['stroke'],0,7));
 		}
-		if (is_string($this->options['type'])) {
+		if (is_string($this->options['type']) && in_array($this->options['type'], $this->types)) {
 			$this->options['type'] = array(0=>$this->options['type']);
+		}
+	}
+
+	/**
+	 * To add your own style
+	 * @param $css string your css
+	 * @return string css
+	 *
+	 * @author Cyril MAGUIRE
+	 */
+	public function setCss($css) {
+		if (is_string($css) && !empty($css)) {
+			$this->css .= $css;
 		}
 	}
 
 	/**
 	 * Main function
 	 * @param $data array Uni or bidimensionnal array
-	 * @param $option array Array of options
+	 * @param $options array Array of options
+	 * @param $putInCache string path of directory where cache will be recorded
+	 * @param $id string index of svg tag
 	 * @return string SVG 
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	public function draw($data,$options=array()) {
-		$return = '';
+	public function draw($data,$options=array(),$putInCache=false,$id=false) {
 
-		//We add 10 units in viewbox to display x legend correctly
-		$options['paddingLegendX'] = 10;
+		# Cache
+		$nameOfFiles = glob($putInCache.'*.svg');
+		if (count($nameOfFiles) > 0) {
+			return file_get_contents($nameOfFiles[0]);
+		}
+		$return = '';
 
 		$options = array_merge($this->options,$options);
 
 		extract($options);
 
-		if (isset($title)) {
+		if ($title) {
 			$options['titleHeight'] = $titleHeight = 40;
 		}
 		if ($opacity < 0 || $opacity > 1) {
 			$options['opacity'] = 0.5;
+		}
+		if (!is_string($diskLegendsLineColor)) {
+			$diskLegendsLineColor = 'darkgrey';
 		}
 
 		$HEIGHT = $height+$titleHeight+$paddingTop;
@@ -110,202 +201,39 @@ class phpGraph {
 		$pie = '';
 
 		if ($type != 'pie' && $type != 'ring') {
-			$arrayOfMin = $arrayOfMax = $arrayOfLenght = $labels = array();
-			$tmp['type'] = array();
-			//For each diagrams with several lines/histograms
-			foreach ($data as $line => $datas) {
-				if ($type == 'stock' || (is_array($type) && in_array('stock',$type))|| $type == 'h-stock' || (is_array($type) && in_array('h-stock',$type)) ) {
-					$arrayOfMin[] = isset($datas['min']) ? floor($datas['min']):0;
-					$arrayOfMax[] = isset($datas['max']) ?  ceil($datas['max']) : 0;
-					$arrayOfLenght[] = count($data);
-					$labels = array_merge(array_keys($data),$labels);
-					if (is_string($type)) {
-						$tmp['type'][$line] = $type;
-					}
-					$multi = true;
-				} else {
-					if (is_array($datas)) {
-						$valuesMax = array_map('ceil', $datas);
-						$valuesMin = array_map('ceil', $datas);
-						$arrayOfMin[] = min($valuesMin);
-						$arrayOfMax[] = max($valuesMax);
-						$arrayOfLenght[] = count($datas);
-						$labels = array_merge(array_keys($datas),$labels);
-						if (is_string($type)) {
-							$tmp['type'][] = $type;
-						}
-						$multi = true;
-					} else {
-						$multi = false;
-					}
-				}
-			}
-			if ($multi == true) {
-				if (!empty($tmp['type'])) {
-					$type = $options['type'] = $tmp['type'];
-				}
-				unset($tmp);
+			# looking for min and max
+			extract($this->__minMax($data,$type));
 
-				$labels = array_unique($labels);
-
-				if ($type == 'h-stock' || (is_array($type) && in_array('h-stock',$type)) ) {
-					$min = 0;
-					$max = count($labels);
-					$Xmax = max($arrayOfMax);
-					$Xmin = min($arrayOfMin);
- 					$lenght = $Xmax - $Xmin;
-				} else {
-					$min = min($arrayOfMin);
-					$max = max($arrayOfMax);
-					$lenght = max($arrayOfLenght);
-				}
-				if ($type == 'stock' || (is_array($type) && in_array('stock',$type)) ) {
-					array_unshift($labels,'');
-					$labels[] = '';
-					$lenght += 2;
-				}
-			} else {
-				$labels = array_keys($data);
-				$lenght = count($data);
-				$min = min($data);
-				$max = max($data);
-			}
-			if ($type == 'h-stock' || (is_array($type) && in_array('h-stock',$type)) ) {
+			$options['type'] = $type;
 			
-				$l = strlen(abs($Xmax))-1;
-				if ($l == 0) {
-					$l = 1;
-					$XM = ceil($Xmax);
-					$stepX = 1;
-					$M = $lenght+1;
-					$steps = 1;
-					if($XM == 0) {$XM = 1;}
-					$unitX = $width/$XM;
-					$widthViewBox = $width+$XM+50;
-				} else {
-					$XM =  ceil($Xmax/($l*10))*($l*10);
-					$stepX = $l*10;
-					$M = $lenght+1;
-					$steps = 1;
-					if ($Xmin>0 || ($Xmin<0 && $Xmax<0)) {
-						$Xmin = 0;
-					}
-					if($XM == 0) {$XM = 1;}
-					$unitX = ($width/$XM);
-					$widthViewBox = $width + ($XM/$stepX)*$unitX;
-				}
-			} else {
-				
-				$l = strlen(abs($max))-1;
-				if ($l == 0) {
-					$l = 1;
-					$M =  ceil($max);
-					$steps = 1;
-				}else {
-					$M =  ceil($max/($l*10))*($l*10);
-					$steps = $l*10;
-				}
-				
-				$max = $M;
-				if (isset($options['steps']) && is_int($steps) ) {
-					$steps = $options['steps'];
-				}
-				$stepX = $width / ($lenght - 1);
-				$widthViewBox = $lenght*$stepX+$stepX;
-			}
+			extract($this->__xAxisConfig($type,$width,$max,$Xmax,$Xmin,$lenght,$options));
 			
 			$unitY = ($height/abs(($max+$steps)-$min));
 			$gridV = $gridH = '';
 			$x = $y = '';
 
-			//Size of canevas will be bigger than grid size to display legends
-			if ($responsive == true) {
-				$return .= "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="100%" height="100%" viewBox="0 0 '.($widthViewBox).' '.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop+$paddingLegendX).'" preserveAspectRatio="xMidYMid meet">'."\n";
-			} else {
-				$return .= "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="'.($lenght*$stepX+$stepX).'" height="'.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop).'" viewBox="0 0 '.($widthViewBox).' '.($HEIGHT+$heightLegends+$titleHeight+2*$paddingTop+$paddingLegendX).'" preserveAspectRatio="xMidYMid meet">'."\n";
-			}
+			$headerDimensions = $this->__headerDimensions($widthViewBox,$HEIGHT,$heightLegends,$titleHeight,$paddingTop,$paddingLegendX,$lenght,$stepX);
+
+			# Size of canevas will be bigger than grid size to display legends
+			$return = $this->__header($headerDimensions,$responsive,$id);
+
 			if ($type == 'stock' || (is_array($type) && in_array('stock',$type)) ) { 
-				$plotLimit = "\n\t".'<defs>';
-				$plotLimit .= "\n\t\t".'<g id="plotLimit">';
-				$plotLimit .= "\n\t\t\t".'<path d="M 0 0 L 10 0" class="graph-line" stroke="" stroke-opacity="1"/>';
-				$plotLimit .= "\n\t\t".'</g>';
-				$plotLimit .= "\n\t".'</defs>'."\n";
+				$plotLimit = $this->__stockDef();
 			}
 			if ($type == 'h-stock' || (is_array($type) && in_array('h-stock',$type)) ) { 
-				$plotLimit = "\n\t".'<defs>';
-				$plotLimit .= "\n\t\t".'<g id="plotLimit">';
-				$plotLimit .= "\n\t\t\t".'<path d="M 0 0 V 0 10" class="graph-line" stroke="" stroke-opacity="1"/>';
-				$plotLimit .= "\n\t\t".'</g>';
-				$plotLimit .= "\n\t".'</defs>'."\n";
+				$plotLimit = $this->__hstockDef();
 			}
-			if (is_array($gradient)) {
-				$id = 'BackgroundGradient'.rand();
-				$return .= "\n\t".'<defs>';
-				$return .= "\n\t\t".'<linearGradient id="'.$id.'">';
-				$return .= "\n\t\t\t".'<stop offset="5%" stop-color="'.$gradient[0].'" />';
-				$return .= "\n\t\t\t".'<stop offset="95%" stop-color="'.$gradient[1].'" />';
-				$return .= "\n\t\t".'</linearGradient>';
-				$return .= "\n\t".'</defs>'."\n";
-				$background = 'url(#'.$id.')';
-			}
-			//Grid is beginning at 50 units from the left
-			$return .= "\t".'<rect x="50" y="'.($paddingTop+$titleHeight).'" width="'.$width.'" height="'.$height.'" class="graph-stroke" fill="'.$background.'" fill-opacity="1"/>'."\n";
-			if (isset($title)) {
-				$return .= "\t".'<title class="graph-tooltip">'.$title.'</title>'."\n";
-				$return .= "\t".'<text x="'.(($width/2)+50).'" y="'.$titleHeight.'" text-anchor="middle" class="graph-title">'.$title.'</text>'."\n";
-			}
-			//Legends x axis
-			$x .= "\t".'<g class="graph-x">'."\n";
-			if (is_array($type) && in_array('h-stock', $type) ) {
-				for ($i=$Xmin; $i <= $XM; $i+=$stepX) {
-		 			//1 graduation every $steps units
-		 			$step = $unitX*$i;
+			# we draw the grid
+			$return .= $this->__svgGrid($gradient,$width,$height,($paddingTop+$titleHeight));
 
-			 		$x .= "\t\t".'<text x="'.(50+$step).'" y="'.($HEIGHT+2*$paddingTop).'" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle">'.$i.'</text>'."\n";
-					//Vertical grid
-					if ($i != $Xmax) {
-						$gridV .= "\t\t".'<path d="M '.(50+$step).' '.($paddingTop+$titleHeight).' V '.($HEIGHT).'"/>'."\n" ;
-					}
-				}
-			} else {
-				$i=0;
-				foreach ($labels as $key => $label) {
-					//We add a gap of 50 units 
-					$x .= "\t\t".'<text x="'.($i*$stepX+50).'" y="'.($HEIGHT+2*$paddingTop).'" text-anchor="middle">'.$label.'</text>'."\n";
-					//Vertical grid
-					if ($i != 0 && $i != $lenght) {
-						$gridV .= "\t\t".'<path d="M '.($i*$stepX+50).' '.($paddingTop+$titleHeight).' V '.($HEIGHT).'"/>'."\n" ;
-					}
-					$i++;
-				}
+			if ($title) {
+				$return .= $this->__titleDef($title,$width,$titleHeight);
 			}
-			$x .= "\t".'</g>'."\n";
+			# Legends x axis and vertical grid
+			extract($this->__XAxisDef($type,$Xmin,$Xmax,$XM,$stepX,$unitX,$HEIGHT,$paddingTop,$titleHeight,$labels,$lenght));
 
-			//Legendes y axis
-			$y .= "\t".'<g class="graph-y">'."\n";
-			if ($min>0 || ($min<0 && $max<0)) {
-				$min = 0;
-			}
-			for ($i=$min; $i <= ($max+$steps); $i+=$steps) {
-	 			//1 graduation every $steps units
-	 			if ($min<0) {
-	 				$stepY = $HEIGHT + $unitY*($min-$i);
-	 			} else {
-	 				$stepY = $HEIGHT - ($unitY*$i);
-	 			}
-	 		
-	 			if ($stepY >= ($titleHeight+$paddingTop+$paddingLegendX)) {
-	 				if (is_array($type) && in_array('h-stock', $type) ) {
-						$y .= "\t\t".'<g class="graph-active"><text x="40" y="'.$stepY.'" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle" >'.($i > 0 ? (strlen($labels[$i-1]) > 3 ? substr($labels[$i-1],0,3).'.</text><title>'.$labels[$i-1].'</title>' : $labels[$i-1].'</text>') : '</text>')."</g>\n";
-	 				} else {
-						$y .= "\t\t".'<text x="40" y="'.$stepY.'" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle" >'.$i.'</text>';
-	 				}
-					//Horizontal grid
-					$gridH .= "\t\t".'<path d="M 50 '.$stepY.' H '.($width+50).'"/>'."\n" ;
-				}
-			}
-			$y .= "\t".'</g>'."\n";
-
+			# Legendes y axis and horizontal grid
+			extract($this->__YAxisDef($type,$width,$min,$max,$steps,$HEIGHT,$titleHeight,$paddingTop,$paddingLegendX,$unitY,$labels));
 			//Grid
 			$return .= "\t".'<g class="graph-grid">'."\n";
 			$return .= $gridH."\n"; 
@@ -322,18 +250,6 @@ class phpGraph {
 						break;
 					case 'bar':
 						$return .= $this->__drawBar($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options);
-						break;
-					case 'ring':
-					case 'pie':
-						if (is_array($stroke)) {
-							$options['stroke'] = $stroke;
-							$options['fill'] = $stroke;
-						}
-						if (is_array($legends)) {
-							$options['legends'] = $legends;
-						}
-						$pie .= $this->__drawDisk($data,$options);
-						$pie .= "\n".'</svg>'."\n";
 						break;
 					default:
 						$return .= $this->__drawLine($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options);
@@ -386,11 +302,11 @@ class phpGraph {
 						case 'pie':
 							$options['multi'] = $multi;
 							if (is_array($stroke)) {
-								$options['stroke'] = $stroke;
+								$options['stroke'] = $stroke[$line];
 								$options['fill'] = $stroke;
 							}
 							if (is_array($legends)) {
-								$options['legends'] = $legends;
+								$options['legends'] = $legends[$line];
 							}
 							$pie .= $this->__drawDisk($datas,$options);
 							$pie .= "\n".'</svg>'."\n";
@@ -401,46 +317,18 @@ class phpGraph {
 					}
 				}
 			}
-			if (isset($legends) && !empty($legends)) {
-				$leg = "\n\t".'<g class="graph-legends">';
-				if (!is_array($legends)) {
-					$legends = array(0 => $legends);
-				}
-				foreach ($legends as $key => $value) {
-					if (isset($type[$key]) && $type[$key] != 'pie' && $type[$key] != 'ring') {
-						if (is_array($stroke) && isset($stroke[$key])) {
-							$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke[$key].'" class="graph-legend-stroke"/>';
-						} else {
-							$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke.'" class="graph-legend-stroke"/>';
-						}
-						$leg .= "\n\t\t".'<text x="70" y="'.($HEIGHT+40+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value.'</text>';
-					}
-					if (is_array($type) && (in_array('stock', $type) || in_array('h-stock', $type))) {
-						if (is_array($stroke)) {
-							$stroke = array_values($stroke);
-							if(isset($stroke[$key+1])) {
-								$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke[$key+1].'" class="graph-legend-stroke"/>';
-							}
-						}
-						$leg .= "\n\t\t".'<text x="70" y="'.($HEIGHT+40+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value.'</text>';
-					}
-				}
-				$leg .= "\n\t".'</g>';
-
-			} else {
-				$leg = '';
-			}
-			$return .= $leg;
+			# legends
+			$return .= $this->__legendsDef($legends,$type,$stroke,$HEIGHT,$paddingTop);
 			$return .= "\n".'</svg>'."\n";
 			$return .= $pie;
 		} else {
 			$options['tooltipLegend'] = array();
-			if (isset($tooltipLegend) && !is_array($tooltipLegend)) {
+			if ($tooltipLegend && !is_array($tooltipLegend)) {
 				foreach ($data as $key => $value) {
 					$options['tooltipLegend'][] = $tooltipLegend;
 				}
 			}
-			if (isset($tooltipLegend) && is_array($tooltipLegend)) {
+			if ($tooltipLegend && is_array($tooltipLegend)) {
 				$options['tooltipLegend'] = $tooltipLegend;
 			}
 			$options['stroke'] = array();
@@ -455,11 +343,11 @@ class phpGraph {
 			foreach ($data as $line => $datas) {
 				if (is_array($datas)) {
 					if (is_array($stroke)) {
-						$options['stroke'] = $stroke;
+						$options['stroke'] = $stroke[$line];
 						$options['fill'] = $stroke;
 					}
 					if (is_array($legends)) {
-						$options['legends'] = $legends;
+						$options['legends'] = $legends[$line];
 					}
 					$return .= $this->__drawDisk($datas,$options);
 					$return .= "\n".'</svg>'."\n";
@@ -483,10 +371,14 @@ class phpGraph {
 		}
 
 		$this->colors = array();
+		if ($putInCache) {
+			$this->putInCache(trim($return),md5(implode('',$nameOfFile)),$putInCache);
+			//file_put_contents($putInCache, trim($return));
+		} 
 		return $return;
 	}
 
-		/**
+	/**
 	 * To draw lines
 	 * @param $data array Unidimensionnal array
 	 * @param $height integer Height of grid
@@ -495,13 +387,13 @@ class phpGraph {
 	 * @param $unitY integer Unit of y-axis
 	 * @param $lenght integer Size of data array
 	 * @param $min integer Minimum value of data
- 	 * @param $max integer Maximum value of data
+	 * @param $max integer Maximum value of data
 	 * @param $options array Options
 	 * @return string Path of lines (with options)
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	public function __drawLine($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options) {
+	protected function __drawLine($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options) {
 		$return = '';
 
 		extract($options);
@@ -529,32 +421,35 @@ class phpGraph {
 			//$min == $value
 			$coordonnees3 = ($i * $stepX + 50).' '.($HEIGHT + $unitY*($min-$value) - $value*$unitY);
 
-			//Tooltips
+			# Tooltips
 			if($tooltips == true) {
 				$c .= "\n\t\t".'<g class="graph-active">';
 			}
-			//Ligne
+			# Line
+			$c1 = $this->__c($coordonneesCircle1,$stroke);
+			$c2 = $this->__c($coordonneesCircle2,$stroke);
+			$c3 = $this->__c($coordonneesCircle3,$stroke);
 			if ($value != $max) {
 				if ($value == $min) {
 					if ($i == 0) {
 						if ($min<=0) {
 							$path .= 'M '.$coordonnees1.' L';
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= $c1;
 						} else {
 							$path .= 'M '.$coordonnees3.' L';
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle3.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= $c3;
 						}
 					} else {
 						if ($min<=0) {
 							$path .= "\n\t\t\t\t".$coordonnees1;
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= $c1;
 						} else {
 							$path .= "\n\t\t\t\t".$coordonnees2;
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= $c1;
 						}
 					}
 				} else {
@@ -562,32 +457,32 @@ class phpGraph {
 						if ($min<=0) {
 							$path .= 'M '.$coordonnees1.' L';
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= $c1;
 						} else {
 							$path .= 'M '.$coordonnees2.' L';
 							//Tooltips and circles
-							$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+							$c .= $c1;
 						}
 					} else {
 						if ($i != $lenght-1) {
 							if ($min<=0) {
 								$path .= "\n\t\t\t\t".$coordonnees1;
 								//Tooltips and circles
-								$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+								$c .= $c1;
 							} else {
 								$path .= "\n\t\t\t\t".$coordonnees2;
 								//Tooltips and circles
-								$c .= "\n\t\t\t".'<circle '.$coordonneesCircle2.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+								$c .= $c2;
 							}
 						} else {
 							if ($min<=0) {
 								$path .= "\n\t\t\t\t".$coordonnees1;
 								//Tooltips and circles
-								$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+								$c .= $c1;
 							} else {
 								$path .= "\n\t\t\t\t".$coordonnees2;
 								//Tooltips and circles
-								$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+								$c .= $c1;
 							}
 						}
 					}
@@ -639,6 +534,7 @@ class phpGraph {
 		}
 		return $return;
 	}
+	
 	/**
 	 * To draw histograms
 	 * @param $data array Unidimensionnal array
@@ -648,13 +544,13 @@ class phpGraph {
 	 * @param $unitY integer Unit of y-axis
 	 * @param $lenght integer Size of data array
 	 * @param $min integer Minimum value of data
- 	 * @param $max integer Maximum value of data
+	 * @param $max integer Maximum value of data
 	 * @param $options array Options
 	 * @return string Path of lines (with options)
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	public function __drawBar($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options) {
+	protected function __drawBar($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options) {
 		$return = '';
 
 		extract($options);
@@ -697,11 +593,7 @@ class phpGraph {
 			//On est sur la première valeur, on divise la largeur de la barre en deux
 			if ($i == 0) {
 				if ($value == $max) {
-					if ($min>=0) {
-						$bar .= "\n\t".'<rect '.$coordonnees8.' width="'.($stepX/2).'" height="'.$height.'" class="graph-bar" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>';
-					} else {
-						$bar .= "\n\t".'<rect '.$coordonnees8.' width="'.($stepX/2).'" height="'.$height.'" class="graph-bar" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>';
-					}
+					$bar .= "\n\t".'<rect '.$coordonnees8.' width="'.($stepX/2).'" height="'.$height.'" class="graph-bar" stroke="'.$stroke.'" fill="#fff" fill-opacity="0"/>';
 					
 					$c .= "\n\t\t\t".'<circle c'.str_replace('y="', 'cy="', $coordonnees8).' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 					
@@ -818,23 +710,6 @@ class phpGraph {
 	}
 
 	/**
-	 * Searches the array for a given value and returns the corresponding key if successful
-	 * @param $needle mixed The searched value
-	 * @param $haystack array The array
-	 * 
-	 * @author buddel (see comments on php man array_search function page)
-	 */
-	public function recursive_array_search($needle,$haystack) {
-	    foreach($haystack as $key=>$value) {
-	        $current_key=$key;
-	        if($needle===$value OR (is_array($value) && $this->recursive_array_search($needle,$value) !== false)) {
-	            return $current_key;
-	        }
-	    }
-	    return false;
-	}
-
-	/**
 	 * To draw pie diagrams
 	 * @param $data array Unidimensionnal array
 	 * @param $options array Options
@@ -842,12 +717,23 @@ class phpGraph {
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	public function __drawDisk($data,$options=array()) {
+	protected function __drawDisk($data,$options=array()) {
 
 		$options = array_merge($this->options,$options);
 
 		extract($options);
 
+		if (is_string($legends)) {
+			$mainLegend = $legends;
+		} else {
+			$mainLegend = null;
+		}
+		if (is_string($stroke)) {
+			$mainStroke = $stroke;
+		} else {
+			$mainStroke = $this->__genColor();
+		}
+		
 		$lenght = count($data);
 		$max = max($data);
 
@@ -866,7 +752,7 @@ class phpGraph {
 					'pourcent' => 0,
 					'val' => $value,
 					'label' => $label,
-					'tooltipLegend' => (is_array($tooltipLegend) && isset($tooltipLegend[$i])) ? $tooltipLegend[$i] : (isset($tooltipLegend) ? $tooltipLegend : ''),
+					'tooltipLegend' => (is_array($tooltipLegend) && isset($tooltipLegend[$i])) ? $tooltipLegend[$i] : (isset($tooltipLegend) && is_string($tooltipLegend) ? $tooltipLegend : ''),
 					'stroke' => (is_array($stroke) && isset($stroke[$i]))? $stroke[$i] : $this->__genColor(),
 				);
 			} else {
@@ -874,7 +760,7 @@ class phpGraph {
 					'pourcent' => round(((($value * 100)/$total)/100),2),
 					'val' => $value,
 					'label' => $label,
-					'tooltipLegend' => (is_array($tooltipLegend) && isset($tooltipLegend[$i])) ? $tooltipLegend[$i] : (isset($tooltipLegend) ? $tooltipLegend : ''),
+					'tooltipLegend' => (is_array($tooltipLegend) && isset($tooltipLegend[$i])) ? $tooltipLegend[$i] : (isset($tooltipLegend) && is_string($tooltipLegend) ? $tooltipLegend : ''),
 					'stroke' => (is_array($stroke) && isset($stroke[$i]) ) ? $stroke[$i] : $this->__genColor(),
 				);
 			}
@@ -882,34 +768,36 @@ class phpGraph {
 		}
 		if (isset($legends)) {
 			if (!is_array($legends) && !empty($legends) && !is_bool($legends)) {
-				$legends = array( 
-					'label' => $legends,
-					'stroke' => (is_array($stroke) ) ? $stroke[0] : $this->__genColor()
-				);
+				$Legends = array();
+				for ($l=0;$l<$lenght;$l++) {
+					$Legends[$l] = array( 
+						'label' => $deg[$l]['label'],
+						'stroke' => $deg[$l]['stroke']
+					);
+				}
+				$legends = $Legends;
+				unset($Legends);
 			} elseif (empty($legends)) {
 				$notDisplayLegends = true;
 			} elseif (is_bool($legends)) {
 				$legends = array();
 			}
 			foreach ($deg as $k => $v) {
-				if (!isset($legends[$k])) {
+				if (!isset($legends[$k]) || !is_array($legends[$k])) {
 					$legends[$k] = array(
 						'label' => $v['label'],
-						'stroke' => (is_array($stroke) && isset($stroke[$k]) ) ? $stroke[$k] : $v['stroke']
-					);
-				}else {
-					$legends[$k] = array(
-						'label' => (isset($multi) ? $v['label'] : $legends[$k]),
 						'stroke' => $v['stroke']
 					);
 				}
-			}
+			}	
 		}
 		$deg = array_reverse($deg);
 
 		$heightLegends = 0;
 		if (isset($legends) && !empty($legends)) {
-			$heightLegends = count($legends)*30+2*$paddingTop;
+			$heightLegends = count($legends)*30+2*$paddingTop+80;
+		} else {
+			$heightLegends = 2*$paddingTop+100;
 		}
 
 		$this->colors[] = $options['stroke'];
@@ -924,7 +812,7 @@ class phpGraph {
 		$return .= "\n\t\t".'<marker id="Triangle"';
 		$return .= "\n\t\t\t".'viewBox="0 0 10 10" refX="0" refY="5"';
 		$return .= "\n\t\t\t".'markerUnits="strokeWidth"';
-		$return .= "\n\t\t\t".'markerWidth="4" markerHeight="3"';
+		$return .= "\n\t\t\t".'markerWidth="10" markerHeight="3"';
 		$return .= "\n\t\t\t".'fill="#a1a1a1" fill-opacity="0.7"';
 		$return .= "\n\t\t\t".'orient="auto">';
 		$return .= "\n\t\t\t".'<path d="M 0 0 L 10 5 L 0 10 z" />';
@@ -942,7 +830,7 @@ class phpGraph {
 			$return .= "\n\t".'</defs>'."\n";
 		}
 		
-  		if (isset($title)) {
+		if (isset($title)) {
 			$return .= "\t".'<text x="'.($originX).'" y="'.$titleHeight.'" text-anchor="middle" class="graph-title">'.$title.'</text>'."\n";
 		}
 
@@ -952,42 +840,73 @@ class phpGraph {
 
 		$i = 0;
 		while ($i <= $lenght-1) { 
+
+			if ($deg[0]['val'] != 0) {
+				$t = (2-$deg[0]['pourcent'])/2;
+				$cosOrigine = cos((-90 + 360 * $t) * M_PI / 180)*$radius;
+				$sinOrigine = sin((-90 + 360 * $t) * M_PI / 180)*$radius;
+				$cosLegOrigine = cos((-90 + 360 * $t) * M_PI / 180)*(2*$radius);
+				$sinLegOrigine = sin((-90 + 360 * $t) * M_PI / 180)*(2*$radius);
+			} else {
+				$cosOrigine = 0;
+				$sinOrigine = 0;
+				$cosLegOrigine = 0;
+				$sinLegOrigine = 0;
+			}
+
 			if ($deg[$i]['val'] != 0) {
 				//Tooltips
 				if($tooltips == true) {
 					$return .= "\n\t\t".'<g class="graph-active">';
 				}
-				$color = $this->__genColor();
+				$color = $deg[0]['stroke'];
 				$return .= "\n\t\t\t".'<circle cx="'.$originX.'" cy="'.($originY+2*$radius).'" r="'.$radius.'" fill="'.$color.'" class="graph-pie"/>'."\n\t\t\t";
-				if(isset($legends) && !empty($legends)) {
-					$tmp = $legends[$i]['label'];
-					$legends[$this->recursive_array_search($deg[$i]['label'],$legends)]['label'] = $tmp;
-					$legends[$i]['stroke'] = $color;
-					$legends[$i]['label'] = $deg[$i]['label'];
+
+				if ($diskLegends == true && $deg[0]['val'] != 0 ){
+
+					if ($deg[0]['pourcent'] >= 0 && $deg[0]['pourcent'] <= 0.5 || $deg[0]['pourcent'] == 1) {
+						$gapx = $gapy = 0;				
+						$pathGap = 2;
+					}
+					if($deg[0]['pourcent'] > 0.5 && $deg[0]['pourcent'] < 1) {
+						$gapx = $gapy = 1;
+						$pathGap = 1;
+					}
+
+					$LABEL = ($diskLegendsType == 'label' ? (isset($legends[$lenght-1-$i]['label']) ? $legends[$lenght-1-$i]['label'] : $deg[$i]['label']) : ($diskLegendsType == 'pourcent' ? ($deg[$i]['pourcent']*100).'%' : $deg[$i]['val']));
+
+					if ($gapx == -1) {
+						$gapx = strlen($LABEL)*$gapx*12;
+						$gapy = 5;
+					}
+
+					$return .= "\n\t\t\t".'<path d=" M '.($originX+$cosOrigine).' '.($originY+2*$radius+$sinOrigine).' L '.($originX+$cosLegOrigine).' '.($originY + 2*$radius + $sinLegOrigine).' L '.($originX+$cosLegOrigine-30).' '.($originY + 2*$radius + $sinLegOrigine).'" class="graph-line" stroke="'.$diskLegendsLineColor.'" stroke-opacity="0.5" stroke-dasharray="2,2,2" fill="none"/>';
+
+					$return .= "\n\t\t\t".'<text x="'.($originX+$cosLegOrigine+$gapx-30*$pathGap).'" y="'.($originY+2*$radius+$sinLegOrigine+$gapy-5).'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">'.$LABEL.'</text>'."\n\t\t\t";
 				}
-
-				$return .= "\n\t\t\t".'<path d=" M '.$originX.' '.($originY+2*$radius).' L '.$originX.' '.($originY+10).'" class="graph-line" stroke="darkgrey" stroke-opacity="0.5" stroke-dasharray="2,2,2" marker-end="url(#Triangle)"/>';
-
-				$return .= "\n\t\t\t".'<text x="'.$originX.'" y="'.$originY.'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">'.($diskLegendsType == 'label' ? (isset($legends[$i]['label']) ? $legends[$i]['label'] : $deg[$i]['label']) : ($diskLegendsType == 'pourcent' ? ($deg[$i]['pourcent']*100).'%' : $deg[$i]['val'])).'</text>'."\n\t\t\t";
 				
 				//End tooltips
 				if($tooltips == true) {
-					$return .= '<title class="graph-tooltip">'.$deg[$i]['tooltipLegend'].(isset($legends[$i]['label']) ? $legends[$i]['label'] : $deg[$i]['label']).' : '.$deg[$i]['val'].'</title>';
+					$return .= '<title class="graph-tooltip">'.$deg[$i]['tooltipLegend'].(isset($legends[$lenght-1-$i]['label']) ? $legends[$lenght-1-$i]['label'] : $deg[$i]['label']).' : '.$deg[$i]['val'].'</title>';
 					$return .= "\n\t\t".'</g>';
 				}
-				$i = $deg[$i]['label'];
+				//$i = $deg[$i]['label'];
 				break;
 			}
 			$i++;
 		}
 		$tmp = array(); 
-		foreach($legends as &$ma) 
-		    $tmp[] = &$ma['label']; 
-		array_multisort($tmp, $legends); 
-
+		if (is_array($legends)) {
+			foreach($legends as &$ma) {
+				$tmp[] = &$ma['label'];
+			}
+			array_multisort($tmp, $legends); 
+		}
+		
 		foreach ($deg as $key => $value) {
 
 				$total -= $value['pourcent'];
+				$total2 = $total;
 
 				$cos = cos((-90 + 360 * $total) * M_PI / 180)*$radius;
 				$sin = sin((-90 + 360 * $total) * M_PI / 180)*$radius;
@@ -995,42 +914,54 @@ class phpGraph {
 				$cosLeg = cos((-90 + 360 * $total) * M_PI / 180)*(2*$radius);
 				$sinLeg = sin((-90 + 360 * $total) * M_PI / 180)*(2*$radius);
 
+				if (isset($deg[$key+1])) {
+					$total2 -= $deg[$key+1]['pourcent'];
+					$t = (($total - $total2)/2) + $total2;
+					$cos2 = cos((-90 + 360 * $t) * M_PI / 180)*$radius;
+					$sin2 = sin((-90 + 360 * $t) * M_PI / 180)*$radius;
+					$cosLeg2 = cos((-90 + 360 * $t) * M_PI / 180)*(2*$radius);
+					$sinLeg2 = sin((-90 + 360 * $t) * M_PI / 180)*(2*$radius);
+				} else {
+					$cos2 = 0;
+					$sin2 = 0;
+					$cosLeg2 = 0;
+					$sinLeg2 = 0;
+				}
+
 				//Tooltips
 				if($tooltips == true && $key < ($lenght-1)) {
 					$return .= "\n\t\t".'<g class="graph-active">';
 				}
 				
-				if ($total >= 0 && $total <= 0.25 || $total == 1) {
+				if ($total >= 0 && $total <= 0.5 || $total == 1) {
 					$arc = 0;
-					$gap = ($radius/4);
-					$gapTextX = ($radius/4) - 10;
-					$gapTextY = ($radius/4) - 10;
+					$gapx = $gapy = 0;
+					$signe = 1;
+					$pathGap = 1;
 				}
-				if($total > 0.25 && $total <= 0.5) {
-					$arc = 0;
-					$gap = -($radius/4);
-					$gapTextX = ($radius/8);
-					$gapTextY = -($radius/4);
-				}
-				if($total > 0.5 && $total < 0.75) {
+				if($total > 0.5 && $total < 1) {
 					$arc = 1;
-					$gap = -($radius/4);
-					$gapTextX = -($radius/8)-20;
-					$gapTextY = ($radius/8)-20;
-				} 
-				if($total > 0.75 && $total < 1) {
-					$arc = 1;
-					$gap = ($radius/4);
-					$gapTextX = -($radius/4);
-					$gapTextY = ($radius/4)-10;
+					$signe = -1;
+					$pathGap = 2.5;
+				}
+				$index = ($key == $lenght-1 ? 0 : $key+1);
+
+				if ($key != $lenght-1 && $deg[$index]['val'] != 0) {
+					$return .= "\n\t\t\t".'<path d="M '.$originX.' '.($originY + $radius).'  A '.$radius.' '.$radius.'  0 '.$arc.' 1 '.($originX + $cos).' '.($originY + 2*$radius + $sin).' L '.$originX.' '.($originY+2*$radius).' z" fill="'.$deg[$index]['stroke'].'" class="graph-pie"/>'."\n\t\t\t";
 				}
 
-				$return .= "\n\t\t\t".'<path d="M '.$originX.' '.($originY + $radius).'  A '.$radius.' '.$radius.'  0 '.$arc.' 1 '.($originX + $cos).' '.($originY + 2*$radius + $sin).' L '.$originX.' '.($originY+2*$radius).' z" fill="'.($key < ($lenght-1) ? $deg[ $key+1]['stroke'] : $legends[0]['stroke']).'" class="graph-pie"/>'."\n\t\t\t";
+				if ($key < ($lenght-1) && $deg[$key+1]['val'] != 0 && $diskLegends == true ) {
 
-				if ($key < ($lenght-1) && $deg[$key+1]['val'] != 0 && $diskLegends == true && $deg[$key+1]['label'] != $i) {
-					$return .= "\n\t\t\t".'<path d=" M '.($originX+$cos).' '.($originY+2*$radius + $sin).' L '.($originX + $cosLeg).' '.($originY + 2*$radius + $sinLeg + $gap).'" class="graph-line" stroke="darkgrey" stroke-opacity="0.5"  stroke-dasharray="2,2,2" marker-end="url(#Triangle)"/>';
+					$LABEL = ($diskLegendsType == 'label' ? (isset($legends[$lenght-$key-2]['label']) ? $legends[$lenght-$key-2]['label'] : $deg[$key+1]['label']) : ($diskLegendsType == 'pourcent' ? ($deg[$key+1]['pourcent']*100).'%' : $deg[$key+1]['val']));
 
-					$return .= "\n\t\t\t".'<text x="'.($originX + $cosLeg + $gapTextX).'" y="'.($originY + 2*$radius + $sinLeg + $gapTextY).'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">'.($diskLegendsType == 'label' ? (isset($legends[$lenght-$key-2]['label']) ? $legends[$lenght-$key-2]['label'] : $deg[$key+1]['label']) : ($diskLegendsType == 'pourcent' ? ($deg[$key+1]['pourcent']*100).'%' : $deg[$key+1]['val'])).'</text>'."\n\t\t\t";
+					if ($arc == 1) {
+						$gapx = strlen($LABEL)*$gapx*12;
+						$gapy = 5;
+					}
+
+					$return .= "\n\t\t\t".'<path d=" M '.($originX+$cos2).' '.($originY+2*$radius+$sin2).' L '.($originX + $cosLeg2).' '.($originY + 2*$radius + $sinLeg2).' L '.($originX+$cosLeg2+$signe*30).' '.($originY + 2*$radius + $sinLeg2).'" fill="none" class="graph-line" stroke="'.$diskLegendsLineColor.'" stroke-opacity="0.5"  stroke-dasharray="2,2,2"/>';
+
+					$return .= "\n\t\t\t".'<text x="'.($originX + $cosLeg2 + $gapx + $signe*30*$pathGap).'" y="'.($originY + 2*$radius + $sinLeg2 + $gapy).'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">&nbsp;&nbsp;'.$LABEL.'</text>'."\n\t\t\t";
 				}
 				//End tooltips
 				if($tooltips == true && $key < ($lenght-1)) {
@@ -1038,11 +969,16 @@ class phpGraph {
 				}
 		}
 
+		if ($mainLegend) {
+			$return .= '<rect x="50" y="'.(4*$radius+$titleHeight+$paddingTop+(2*$paddingTop)+30).'" width="10" height="10" fill="'.$mainStroke.'" class="graph-legend-stroke"/>
+			<text x="70" y="'.(4*$radius+$titleHeight+$paddingTop+(2*$paddingTop)+40).'" class="graph-legend">'.$mainLegend.'</text>';
+		}
 		if (isset($legends) && !empty($legends) && !isset($notDisplayLegends)) {
 			$leg = "\t".'<g class="graph-legends">';
 			foreach ($legends as $key => $value) {
-				$leg .= "\n\t\t".'<rect x="50" y="'.(4*$radius+$titleHeight+$paddingTop+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.((is_array($stroke) && isset($stroke[$key]) ) ? $stroke[$key] : $value['stroke']).'" class="graph-legend-stroke"/>';
-				$leg .= "\n\t\t".'<text x="70" y="'.(4*$radius+$titleHeight+$paddingTop+40+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value['label'].'</text>';
+				$colorToFillWith = ($key == 0 ? $value['stroke'] : $deg[$lenght-$key-1]['stroke']);
+				$leg .= "\n\t\t".'<rect x="70" y="'.(4*$radius+$titleHeight+$paddingTop+70+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$colorToFillWith.'" class="graph-legend-stroke"/>';
+				$leg .= "\n\t\t".'<text x="90" y="'.(4*$radius+$titleHeight+$paddingTop+80+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value['label'].'</text>';
 			}
 			$leg .= "\n\t".'</g>';
 
@@ -1064,7 +1000,7 @@ class phpGraph {
 	 * @param $unitY integer Unit of y-axis
 	 * @param $lenght integer Number of graduations on x-axis
 	 * @param $min integer Minimum value of data
- 	 * @param $max integer Maximum value of data
+	 * @param $max integer Maximum value of data
 	 * @param $options array Options
 	 * @param $i integer index of current data
 	 * @param $labels array labels of x-axis
@@ -1073,7 +1009,7 @@ class phpGraph {
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	public function __drawStock($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options,$i,$labels,$id) {
+	protected function __drawStock($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options,$i,$labels,$id) {
 		$error = null;
 		if (!isset($data[$labels[$i]]['open'])) { 
 			$error[] = 'open';
@@ -1115,21 +1051,13 @@ class phpGraph {
 		$return .= '<use xlink:href="#plotLimit'.$id.'" transform="translate('.($i * $stepX + 50 - 5).','.($HEIGHT-$unitY*$data[$labels[$i]]['min']).')"/>';
 		if($tooltips == true) {
 			//Open
-			$return .= "\n\t\t".'<g class="graph-active">';
-			$return .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($HEIGHT - $unitY*$data[$labels[$i]]['open']).'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
-			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['open'].'</title>'."\n\t\t".'</g>';
+			$return .= $this->__circle($i,$stepX,($HEIGHT - $unitY*$data[$labels[$i]]['open']),$data[$labels[$i]]['open'],$stroke);
 			//Close
-			$return .= "\n\t\t".'<g class="graph-active">';
-			$return .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($HEIGHT - $unitY*$data[$labels[$i]]['close']).'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
-			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['close'].'</title>'."\n\t\t".'</g>';
+			$return .= $this->__circle($i,$stepX,($HEIGHT - $unitY*$data[$labels[$i]]['close']),$data[$labels[$i]]['close'],$stroke);
 			//Max
-			$return .= "\n\t\t".'<g class="graph-active">';
-			$return .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($HEIGHT - $unitY*$data[$labels[$i]]['max']).'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
-			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['max'].'</title>'."\n\t\t".'</g>';
+			$return .= $this->__circle($i,$stepX,($HEIGHT - $unitY*$data[$labels[$i]]['max']),$data[$labels[$i]]['max'],$stroke);
 			//Min
-			$return .= "\n\t\t".'<g class="graph-active">';
-			$return .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($HEIGHT - $unitY*$data[$labels[$i]]['min']).'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
-			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['min'].'</title>'."\n\t\t".'</g>';
+			$return .= $this->__circle($i,$stepX,($HEIGHT - $unitY*$data[$labels[$i]]['min']),$data[$labels[$i]]['min'],$stroke);
 		}
 		return $return;
 	}
@@ -1143,7 +1071,7 @@ class phpGraph {
 	 * @param $unitY integer Unit of y-axis
 	 * @param $lenght integer Number of graduations on y-axis
 	 * @param $Xmin integer Minimum value of data
- 	 * @param $Xmax integer Maximum value of data
+	 * @param $Xmax integer Maximum value of data
 	 * @param $options array Options
 	 * @param $i integer index of current data
 	 * @param $labels array labels of y-axis
@@ -1152,7 +1080,7 @@ class phpGraph {
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	public function __drawHstock($data,$HEIGHT,$stepX,$unitX,$unitY,$lenght,$Xmin,$Xmax,$options,$i,$labels,$id) {
+	protected function __drawHstock($data,$HEIGHT,$stepX,$unitX,$unitY,$lenght,$Xmin,$Xmax,$options,$i,$labels,$id) {
 		if($i>0) {$i--;}
 
 		$stepY = $HEIGHT - ($unitY*($i+1));
@@ -1198,24 +1126,306 @@ class phpGraph {
 		$return .= '<use xlink:href="#plotLimit'.$id.'" transform="translate('.($unitX*$data[$labels[$i]]['min']+50).','.($stepY-5).')"/>';
 		if($tooltips == true) {
 			//Open
-			$return .= "\n\t\t".'<g class="graph-active">';
-			$return .= "\n\t\t\t".'<circle cx="'.($unitX*$data[$labels[$i]]['open']+50).'" cy="'.$stepY.'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
-			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['open'].'</title>'."\n\t\t".'</g>';
+			$return .= $this->__circle($unitX,$data[$labels[$i]]['open'],$stepY,$data[$labels[$i]]['open'],$stroke);
 			//Close
-			$return .= "\n\t\t".'<g class="graph-active">';
-			$return .= "\n\t\t\t".'<circle cx="'.($unitX*$data[$labels[$i]]['close']+50).'" cy="'.$stepY.'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
-			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['close'].'</title>'."\n\t\t".'</g>';
+			$return .= $this->__circle($unitX,$data[$labels[$i]]['close'],$stepY,$data[$labels[$i]]['close'],$stroke);
 			//Max
-			$return .= "\n\t\t".'<g class="graph-active">';
-			$return .= "\n\t\t\t".'<circle cx="'.($unitX*$data[$labels[$i]]['max']+50).'" cy="'.$stepY.'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
-			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['max'].'</title>'."\n\t\t".'</g>';
+			$return .= $this->__circle($unitX,$data[$labels[$i]]['max'],$stepY,$data[$labels[$i]]['max'],$stroke);
 			//Min
-			$return .= "\n\t\t".'<g class="graph-active">';
-			$return .= "\n\t\t\t".'<circle cx="'.($unitX*$data[$labels[$i]]['min']+50).'" cy="'.$stepY.'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
-			$return .= "\n\t".'<title class="graph-tooltip">'.$data[$labels[$i]]['min'].'</title>'."\n\t\t".'</g>';
+			$return .= $this->__circle($unitX,$data[$labels[$i]]['min'],$stepY,$data[$labels[$i]]['min'],$stroke);
 		}
 		return $return;
 	}
+
+	/**
+	 * To add circles on histogram
+	 * @param $unitX integer index of current data
+	 * @param $cx integer Distance between two graduations on x-axis
+	 * @param $cy integer Distance between two graduations on y-axis
+	 * @param $label string label of tooltip
+	 * @param $stroke string color of circle
+	 * @return string path of circle
+	 *
+	 * @author Cyril MAGUIRE
+	 */
+	protected function __circle($unitX,$cx,$cy,$label,$stroke) {
+		$return = "\n\t\t".'<g class="graph-active">';
+		$return .= "\n\t\t\t".'<circle cx="'.($unitX*$cx+50).'" cy="'.$cy.'" r="1" stroke="'.$stroke.'" opacity="0" class="graph-point-active"/>';
+		$return .= "\n\t".'<title class="graph-tooltip">'.$label.'</title>'."\n\t\t".'</g>';
+		return $return;
+	}
+
+	/**
+	 * To research min and max values of data depends on type of graph
+	 * @param $data array data
+	 * @param $type string line, bar, pie, ring, stock or h-stock
+	 * @return array of variables needed for draw method
+	 *
+	 * @author Cyril MAGUIRE
+	 */
+	protected function __minMax($data,$type) {
+		$arrayOfMin = $arrayOfMax = $arrayOfLenght = $labels = $tmp['type'] = array();
+		$valuesMax = $valuesMin = '';
+		$Xmin = $Xmax = null;
+		$multi = false;
+		//For each diagrams with several lines/histograms
+		foreach ($data as $line => $datas) {
+			if ($type == 'stock' || (is_array($type) && in_array('stock',$type))|| $type == 'h-stock' || (is_array($type) && in_array('h-stock',$type)) ) {
+				$arrayOfMin[] = isset($datas['min']) ? floor($datas['min']):0;
+				$arrayOfMax[] = isset($datas['max']) ?  ceil($datas['max']) : 0;
+				$arrayOfLenght[] = count($data);
+				$labels = array_merge(array_keys($data),$labels);
+				if (is_string($type)) {
+					$tmp['type'][$line] = $type;
+				}
+				$multi = true;
+			} else {
+				if (is_array($datas)) {
+					$valuesMax = array_map('ceil', $datas);
+					$valuesMin = array_map('ceil', $datas);
+					$arrayOfMin[] = min($valuesMin);
+					$arrayOfMax[] = max($valuesMax);
+					$arrayOfLenght[] = count($datas);
+					$labels = array_merge(array_keys($datas),$labels);
+					if (is_string($type)) {
+						$tmp['type'][] = $type;
+					}
+					$multi = true;
+				} else {
+					$multi = false;
+				}
+			}
+		}
+		if ($multi == true) {
+			if (!empty($tmp['type'])) {
+				$type = $tmp['type'];
+			}
+			unset($tmp);
+
+			$labels = array_unique($labels);
+
+			if ($type == 'h-stock' || (is_array($type) && in_array('h-stock',$type)) ) {
+				$min = 0;
+				$max = count($labels);
+				$Xmax = max($arrayOfMax);
+				$Xmin = min($arrayOfMin);
+				$lenght = $Xmax - $Xmin;
+			} else {
+				$min = min($arrayOfMin);
+				$max = max($arrayOfMax);
+				$lenght = max($arrayOfLenght);
+			}
+			if ($type == 'stock' || (is_array($type) && in_array('stock',$type)) ) {
+				array_unshift($labels,'');
+				$labels[] = '';
+				$lenght += 2;
+			}
+		} else {
+			$labels = array_keys($data);
+			$lenght = count($data);
+			$min = min($data);
+			$max = max($data);
+		}
+		return array('min'=>$min, 'max'=>$max, 'lenght'=>$lenght, 'labels'=>$labels, 'multi'=>$multi, 'valuesMax'=>$valuesMax, 'valuesMin'=>$valuesMin, 'Xmin'=>$Xmin, 'Xmax'=>$Xmax, 'type' => $type);
+	}
+
+	/**
+	 * Calcul of variables needed for x-axis configuration
+	 * @param $type string type of graph
+	 * @param $width integer width of grid
+	 * @param $max integer max of values in data
+	 * @param $Xmax integer max of values in x-axis
+	 * @param $Xmin integer min of values in x-axis
+	 * @param $lenght integer distance between min and max values
+	 * @param $options array options
+	 * @return array of variables needed for draw method
+	 *
+	 * @author Cyril MAGUIRE
+	 */
+	protected function __xAxisConfig($type,$width,$max,$Xmax,$Xmin,$lenght,$options=false) {
+		$XM = $stepX = $unitX = null;
+		if ($type == 'h-stock' || (is_array($type) && in_array('h-stock',$type)) ) {
+
+			$l = strlen(abs($Xmax))-1;
+			if ($l == 0) {
+				$l = 1;
+				$XM = ceil($Xmax); # Max value to display in x axis
+				$stepX = 1;
+				$M = $lenght+1; # temporary max
+				$steps = 1;
+				if($XM == 0) {$XM = 1;}
+				$unitX = $width/$XM;
+				$widthViewBox = $width+$XM+50;
+			} else {
+				$XM =  ceil($Xmax/($l*10))*($l*10);
+				$stepX = $l*10;
+				$M = $lenght+1;
+				$steps = 1;
+				if ($Xmin>0 || ($Xmin<0 && $Xmax<0)) {
+					$Xmin = 0;
+				}
+				if($XM == 0) {$XM = 1;}
+				$unitX = ($width/$XM);
+				$widthViewBox = $width + ($XM/$stepX)*$unitX;
+			}
+		} else {
+			
+			$l = strlen(abs($max))-1;
+			if ($l == 0) {
+				$l = 1;
+				$M =  ceil($max);
+				$steps = 1;
+			}else {
+				$M =  ceil($max/($l*10))*($l*10);
+				$steps = $l*10;
+			}
+			
+			$max = $M;
+			if (isset($options['steps']) && is_int($steps) ) {
+				$steps = $options['steps'];
+			}
+			$stepX = $width / ($lenght - 1);
+			$widthViewBox = $lenght*$stepX+$stepX;
+		}
+		return array('XM'=>$XM,'stepX'=>$stepX,'steps'=>$steps,'unitX'=>$unitX,'widthViewBox'=>$widthViewBox,'Xmin'=>$Xmin);
+	}
+
+	/**
+	 * To draw x-axis of the grid
+	 * @param $type string type of graph
+	 * @param $Xmin integer min of values in x-axis
+	 * @param $Xmax integer max of values in x-axis
+	 * @param $XM integer Max value to display in x axis
+	 * @param $stepX integer Distance between two graduations on x-axis
+	 * @param $unitX integer index of current data
+	 * @param $HEIGHT integer height of the entire svg tag
+	 * @param $paddingTop integer padding on top 
+	 * @param $titleHeight integer height of title
+	 * @param $labels array Array of labels
+	 * @param $lenght integer distance between min and max values
+	 * @return array of variables needed for draw method
+	 *
+	 * @author Cyril MAGUIRE
+	 */
+	protected function __XAxisDef($type,$Xmin,$Xmax,$XM,$stepX,$unitX,$HEIGHT,$paddingTop,$titleHeight,$labels,$lenght) {
+		$gridV = $x = '';
+		$x .= "\t".'<g class="graph-x">'."\n";
+		if (is_array($type) && in_array('h-stock', $type) ) {
+			for ($i=$Xmin; $i <= $XM; $i+=$stepX) {
+				//1 graduation every $steps units
+				$step = $unitX*$i;
+
+				$x .= "\t\t".'<text x="'.(50+$step).'" y="'.($HEIGHT+2*$paddingTop).'" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle">'.$i.'</text>'."\n";
+				//Vertical grid
+				if ($i != $Xmax) {
+					$gridV .= "\t\t".'<path d="M '.(50+$step).' '.($paddingTop+$titleHeight).' V '.($HEIGHT).'"/>'."\n" ;
+				}
+			}
+		} else {
+			$i=0;
+			foreach ($labels as $key => $label) {
+				//We add a gap of 50 units 
+				$x .= "\t\t".'<text x="'.($i*$stepX+50).'" y="'.($HEIGHT+2*$paddingTop).'" text-anchor="middle">'.$label.'</text>'."\n";
+				//Vertical grid
+				if ($i != 0 && $i != $lenght) {
+					$gridV .= "\t\t".'<path d="M '.($i*$stepX+50).' '.($paddingTop+$titleHeight).' V '.($HEIGHT).'"/>'."\n" ;
+				}
+				$i++;
+			}
+		}
+		$x .= "\t".'</g>'."\n";
+		return array('x'=>$x, 'gridV'=>$gridV);
+	}
+
+	/**
+	 * To draw y-axis of the grid
+	 * @param $type string type of graph
+	 * @param $width integer width of grid
+	 * @param $min integer min of values in data
+	 * @param $max integer max of values in data
+	 * @param $steps integer Distance between two graduations
+	 * @param $HEIGHT integer height of the entire svg tag
+	 * @param $titleHeight integer height of title
+	 * @param $paddingTop integer padding on top 
+	 * @param $paddingLegendX integer padding between legend and x axis
+	 * @param $unitY integer unit of y graduations
+	 * @param $labels array Array of labels
+	 * @return array of variables needed for draw method
+	 *
+	 * @author Cyril MAGUIRE
+	 */
+	protected function __YAxisDef($type,$width,$min,$max,$steps,$HEIGHT,$titleHeight,$paddingTop,$paddingLegendX,$unitY,$labels) {
+		$gridH = $y = '';
+		$y .= "\t".'<g class="graph-y">'."\n";
+		if ($min>0 || ($min<0 && $max<0)) {
+			$min = 0;
+		}
+		for ($i=$min; $i <= ($max+$steps); $i+=$steps) {
+			//1 graduation every $steps units
+			if ($min<0) {
+				$stepY = $HEIGHT + $unitY*($min-$i);
+			} else {
+				$stepY = $HEIGHT - ($unitY*$i);
+			}
+		
+			if ($stepY >= ($titleHeight+$paddingTop+$paddingLegendX)) {
+				if (is_array($type) && in_array('h-stock', $type) ) {
+					$y .= "\t\t".'<g class="graph-active"><text x="40" y="'.$stepY.'" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle" >'.($i > 0 ? (strlen($labels[$i-1]) > 3 ? substr($labels[$i-1],0,3).'.</text><title>'.$labels[$i-1].'</title>' : $labels[$i-1].'</text>') : '</text>')."</g>\n";
+				} else {
+					$y .= "\t\t".'<text x="40" y="'.$stepY.'" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle" >'.$i.'</text>';
+				}
+				//Horizontal grid
+				$gridH .= "\t\t".'<path d="M 50 '.$stepY.' H '.($width+50).'"/>'."\n" ;
+			}
+		}
+		$y .= "\t".'</g>'."\n";
+		return array('y'=>$y,'gridH'=>$gridH);
+	}
+
+	/**
+	 * To draw legends under the grid
+	 * @param $legends array Array of legends
+	 * @param $type string type of graph
+	 * @param $stroke string color of legends
+	 * @param $HEIGHT integer height of the entire svg tag
+	 * @param $paddingTop integer padding on top
+	 * @return string path of legends
+	 *
+	 * @author Cyril MAGUIRE
+	 */
+	protected function __legendsDef($legends,$type,$stroke,$HEIGHT,$paddingTop) {
+		if (isset($legends) && !empty($legends)) {
+			$leg = "\n\t".'<g class="graph-legends">';
+			if (!is_array($legends)) {
+				$legends = array(0 => $legends);
+			}
+			foreach ($legends as $key => $value) {
+				if (isset($type[$key]) && $type[$key] != 'pie' && $type[$key] != 'ring') {
+					if (is_array($stroke) && isset($stroke[$key])) {
+						$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke[$key].'" class="graph-legend-stroke"/>';
+					} else {
+						$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke.'" class="graph-legend-stroke"/>';
+					}
+					$leg .= "\n\t\t".'<text x="70" y="'.($HEIGHT+40+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value.'</text>';
+				}
+				if (is_array($type) && (in_array('stock', $type) || in_array('h-stock', $type))) {
+					if (is_array($stroke)) {
+						$stroke = array_values($stroke);
+						if(isset($stroke[$key+1])) {
+							$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke[$key+1].'" class="graph-legend-stroke"/>';
+						}
+					}
+					$leg .= "\n\t\t".'<text x="70" y="'.($HEIGHT+40+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value.'</text>';
+				}
+			}
+			$leg .= "\n\t".'</g>';
+
+		} else {
+			$leg = '';
+		}
+		return $leg;
+	}
+
 	/**
 	 * To generate hexadecimal code for color
 	 * @param null
@@ -1223,7 +1433,7 @@ class phpGraph {
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	public function __genColor() {
+	protected function __genColor() {
 		$val = array("0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F");
 		shuffle($val);
 		$rand = array_rand($val,6);
@@ -1240,6 +1450,195 @@ class phpGraph {
 		} else {
 			return $this->__genColor();
 		}
+	}
+
+	protected function __stockDef() {
+		$return = "\n\t".'<defs>';
+		$return .= "\n\t\t".'<g id="plotLimit">';
+		$return .= "\n\t\t\t".'<path d="M 0 0 L 10 0" class="graph-line" stroke="" stroke-opacity="1"/>';
+		$return .= "\n\t\t".'</g>';
+		$return .= "\n\t".'</defs>'."\n";
+		return $return;
+	}
+
+	protected function __hstockDef() {
+		$return = "\n\t".'<defs>';
+		$return .= "\n\t\t".'<g id="plotLimit">';
+		$return .= "\n\t\t\t".'<path d="M 0 0 V 0 10" class="graph-line" stroke="" stroke-opacity="1"/>';
+		$return .= "\n\t\t".'</g>';
+		$return .= "\n\t".'</defs>'."\n";
+		return $return;
+	}
+
+	protected function __gradientDef($gradient,$id) {
+		$return ="\n\t".'<defs>';
+		$return .= "\n\t\t".'<linearGradient id="'.$id.'">';
+		$return .= "\n\t\t\t".'<stop offset="5%" stop-color="'.$gradient[0].'" />';
+		$return .= "\n\t\t\t".'<stop offset="95%" stop-color="'.$gradient[1].'" />';
+		$return .= "\n\t\t".'</linearGradient>';
+		$return .= "\n\t".'</defs>'."\n";
+		return $return;
+	}
+
+	protected function __header($dimensions=array('width'=>'100%','height'=>'100%','widthViewBox'=>685,'heightViewBox'=>420), $responsive=true,$id=false) {
+		if ($responsive == true) {
+			$return = "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="100%" height="100%" viewBox="0 0 '.($dimensions['widthViewBox']).' '.($dimensions['heightViewBox']).'" preserveAspectRatio="xMidYMid meet"'.($id ? ' id="'.$id.'"':'').'>'."\n";
+		} else {
+			$return = "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="'.$dimensions['width'].'" height="'.$dimensions['height'].'" viewBox="0 0 '.$dimensions['widthViewBox'].' '.($dimensions['heightViewBox']).'" preserveAspectRatio="xMidYMid meet"'.($id ? ' id="'.$id.'"':'').'>'."\n";
+		}
+		$return .= "\n".'<defs>
+    <style type="text/css"><![CDATA[
+      '.$this->css.'
+    ]]></style>'."\n".'</defs>'."\n";
+  		return $return;
+	}
+
+	protected function __svgGrid($gradient,$width,$height,$yHeight) {
+		$return = '';
+		$background = '#ffffff';
+		if (is_array($gradient) && count($gradient) == 2) {
+			$id = 'BackgroundGradient'.rand();
+			$return .= $this->__gradientDef($gradient,$id);
+			$background = 'url(#'.$id.')';
+		}
+		//Grid is beginning at 50 units from the left
+		return $return .= "\t".'<rect x="50" y="'.$yHeight.'" width="'.$width.'" height="'.$height.'" class="graph-stroke" fill="'.$background.'" fill-opacity="1"/>'."\n";
+	}
+
+	protected function __titleDef($title,$width,$titleHeight) {
+		$return = "\t".'<title class="graph-tooltip">'.$title.'</title>'."\n";
+		$return .= "\t".'<text x="'.(($width/2)+50).'" y="'.$titleHeight.'" text-anchor="middle" class="graph-title">'.$title.'</text>'."\n";
+		return $return;
+	}
+
+	protected function __headerDimensions($widthViewBox,$HEIGHT,$heightLegends,$titleHeight,$paddingTop,$paddingLegendX,$lenght,$stepX) {
+		return array(
+			'widthViewBox' => $widthViewBox,
+			'heightViewBox' => $HEIGHT+$heightLegends+$titleHeight+2*$paddingTop+$paddingLegendX,
+			'width' => $lenght*$stepX+$stepX,
+			'height' => $HEIGHT+$heightLegends+$titleHeight+2*$paddingTop,
+		);
+	}
+
+	protected function __c($coordonnees,$stroke) {
+		return "\n\t\t\t".'<circle '.$coordonnees.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+	}
+
+	/**
+	* Méthode permettant de trier un tableau multidimensionnel sur un ou deux index
+	* @param $array array le tableau à trier
+	* @param $keys mixed (array ou string) l'index ou le tableau des deux index sur le(s)quel(s) va(vont) se faire le tri
+	* 
+	* @return array
+	* 
+	* @author Cyril MAGUIRE
+	*/	
+    public function arraySort(&$array,$keys) {
+    	if (!is_array($keys)) $keys = array(0=>$keys);
+    	$c = count($keys);
+		$cmp = function ($a, $b) use ($keys,$c) {
+			$i = 0;
+	    	if ($c>1){  
+				if (strcasecmp($a[$keys[$i]], $b[$keys[$i]]) == 0){
+					if (isset($keys[$i+1]) && isset($a[$keys[$i+1]])){
+						return strcasecmp($a[$keys[$i+1]], $b[$keys[$i+1]]);
+					} else {
+						return strcasecmp($a[$keys[$c-1]], $b[$keys[$c-1]]);
+					}
+				} else {
+					return strcasecmp($a[$keys[$i]], $b[$keys[$i]]);
+					}
+			} else {
+				return strcasecmp($a[$keys[0]], $b[$keys[0]]);
+			}
+	    };
+	    return usort($array,$cmp);
+	}
+
+	/**
+	 * Transform svg file into vml file for internet explorer
+	 *
+	 * @param $svg string svg to transform
+	 * @param $vml string path to vml file
+	 * @param $root string path of root of app
+	 * @param $url string url of site
+	 * @return vml string
+	 *
+	 * @author Cyril MAGUIRE
+	 */
+	public function svg2vml($svg,$vml,$root,$url) {
+		if(is_string($svg)){
+			$xsl = "vendors/svg2vml/svg2vml.xsl";# see http://vectorconverter.sourceforge.net/index.html
+			$xml_contents=$svg;
+			$from="/(<meta[^>]*[^\/]?)>/i";
+			$xml_contents=preg_replace($from,"$1/>",$xml_contents);
+			$from="/\/(\/>)/i";
+			$xml_contents=preg_replace($from,"$1",$xml_contents);
+			$xml_contents=preg_replace("/<\!DOCTYPE[^>]+\>/i","",$xml_contents);	
+			$xml_contents=preg_replace("/<\?xml-stylesheet[^>]+\>/i","",$xml_contents);
+
+			$xh=xslt_create();
+			$arguments=array('/_xml' =>$xml_contents,'/_xsl' => file_get_contents($xsl));
+			$result=xslt_process($xh, 'arg:/_xml', 'arg:/_xsl', NULL, $arguments);
+			xslt_free($xh);
+
+			$result = str_replace('<?xml version="1.0"?>'."\n", '', $result);
+			file_put_contents($root.$vml, $result);
+			$output = "<div class=\"object\"><object type=\"text/html\" data=\"".Router::url($vml)."\" >";
+			$output .= "</object></div>\n";
+			$output = Tools::wmodeTransparent($output);
+			return $output;
+		} else{
+			return L_ERROR_FILE_NOT_FOUND;
+		}
+	}
+
+	/**
+	 * Put svg file in cache
+	 *
+	 * @param $svg string svg to record
+	 * @param $outputName string name of svg file
+	 * @param $outputDir string path of cache directory
+	 * @return bool
+	 *
+	 * @author Cyril MAGUIRE
+	 */
+	protected function putInCache($svg,$outputName='svg',$outputDir='data/img/') {
+		if (!is_dir($outputDir)) {
+			mkdir($outputDir);
+		}
+		// To avoid multiple file in a directory, we delete all (I know it's brutal)
+		$files = glob($outputDir.'*.svg');
+		foreach ($files as $key => $file) {
+			unlink($file);
+		}
+		// Then, we record only one file
+		file_put_contents($outputDir.$outputName.'.svg', $svg);
+	}
+
+	# Work in progress......
+	public function svgToPng($svg,$outputName='svg',$outputDir='data/img/',$width=800,$height=600) {
+		// exit();
+		//exec(escapeshellcmd('python svgtopng --'.$width.' --'.$height.' --o '.SIG_ROOT.$outputDir.$outputName.'.png '.$svg));
+		// exec("convert -version", $out);//On teste la présence d'imagick sur le serveur
+		// if (!empty($out)) {
+		// 	$im = new Imagick();
+		// 	$imagick->setBackgroundColor(new ImagickPixel('transparent'));
+		// 	$im->readImageBlob($svg);
+			/*png settings*/
+			// $im->setImageFormat("png24");
+			// $im->resizeImage($width, $height, imagick::FILTER_LANCZOS, 1);  /*Optional, if you need to resize*/
+
+			/*jpeg*/
+			// $im->setImageFormat("jpeg");
+			// $im->adaptiveResizeImage($width, $height); /*Optional, if you need to resize*/
+
+			// $im->writeImage(SIG_ROOT.$outputDir.$outputName.'.png');
+			// // $im->writeImage(SIG_ROOT.$outputDir.$outputName.'.jpg');
+			// $im->clear();
+			// $im->destroy();
+			// echo '<img src="'.Router::url($outputDir.$outputName.'.png').'" alt="'.$outputName.'.png" />';
+		// }
 	}
 }
 ?>
