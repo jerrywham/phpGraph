@@ -1,4 +1,5 @@
 <?php 
+
 //phpGraph is a php library that generate svg graphic (line, histogram or pie)
 
 # ------------------ BEGIN LICENSE BLOCK ------------------
@@ -14,7 +15,7 @@
 #    |  /                 \  |    |    |    |           |
 #    |/____________________\_|____|____|____|___________|
 #
-# @update     2013-12-17
+# @update     2015-01-29
 # @copyright  2013 Cyril MAGUIRE
 # @licence    http://www.cecill.info/licences/Licence_CeCILL_V2.1-fr.txt CONTRAT DE LICENCE DE LOGICIEL LIBRE CeCILL version 2.1
 # @link       http://phpgraph.ecsyeo.net
@@ -361,7 +362,8 @@ $G = new phpGraph();
 
     // //Then we draw charts
     echo $G->draw($data[0],array(
-            'type' => 'curve'
+            'type' => 'curve',
+            'tooltips'=>true,
         )
     );
     echo '<h1>Multi lines with histogram and pie</h1>';
@@ -442,7 +444,8 @@ $G = new phpGraph();
             'diskLegends' => true,
             'diskLegendsType' => 'pourcent',
             'gradient' => array('grey', 'white'),
-            'diskLegendsLineColor' => '#fd4263'
+            'diskLegendsLineColor' => '#fd4263',
+            'paddingLegendY'=> 70
         )
     );
     echo $G->draw($d,array(
@@ -507,12 +510,41 @@ $G = new phpGraph();
     );
     $disk = array('occupe'=> 40,'libre'=>60);
     echo $G->draw($disk,array(
-        'type' => 'pie',
-        'diskLegends'=>true,
-        'stroke' => array(
-            0=>'red',
-            1=>'green')
-    ))
+            'type' => 'pie',
+            'title' => 'Gestion mémoire :',
+            'tooltips'=> true,
+            'tooltipLegend' => 'Capacité : ',
+            'stroke' => array(
+                0=>'red',
+                1=>'green'),
+             'legends' => array(0=>'Occupé',1=>'Libre'), //conflit entre les deux. voir pour légende non affichée
+            'diskLegends' => true,
+            'diskLegendsType' => 'label',
+            'gradient' => array('grey', 'white'),
+            'diskLegendsLineColor' => '#fd4263',
+        )
+    );
+    $p = array(
+        '2000' => 7,
+        '2001' => 15,
+        '2002' => 39,
+        '2003' => 26,
+        '2004' => 36,
+        '2005' => 18,
+        '2006' => 32,
+        '2007' => 56,
+        '2008' => 38,
+        '2009' => 103,
+        '2010' => 105,
+        '2011' => 126,
+        '2012' => 125,
+        '2013' => 76,
+        '2014' => 10,
+    );
+    echo $G->draw($p,array(
+        'tooltips' => true,
+        'type' => 'bar'
+    ));
     //Results above...
     ?>
     
