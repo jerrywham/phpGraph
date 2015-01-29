@@ -80,7 +80,11 @@ Licence :
 
 Change log :
 ---------
- # 2015-01-28
+2015-01-29
+  * [BUG] calcul of position of points for lines and bars
+  * [BUG] position of legend for pies and rings
+  
+2015-01-28
   * [+] css file is not mandatory. Style is included in svg and can be modified via setCss() method
   * [+] new option : diskLegendsLineColor
   * [BUG] colors of legends
