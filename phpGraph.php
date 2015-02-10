@@ -13,7 +13,7 @@
 #    |	/				  \	 |	  |	   |	|			|
 #    |/____________________\_|____|____|____|___________|
 #
-# @update     2015-01-29
+# @update     2015-02-03
 # @copyright  2013-2015 Cyril MAGUIRE
 # @licence    http://www.cecill.info/licences/Licence_CeCILL_V2.1-fr.txt CONTRAT DE LICENCE DE LOGICIEL LIBRE CeCILL version 2.1
 # @link       http://jerrywham.github.io/phpGraph/
@@ -115,6 +115,8 @@ class phpGraph {
 	);
 	# authorized types
 	protected $types = array('line','line','bar','pie','ring','stock','h-stock');
+
+	private static $instance;
 	
 	//protected $colors = array();
 
@@ -147,6 +149,21 @@ class phpGraph {
 	}
 
 	/**
+	 * Méthode qui se charger de créer le Singleton
+	 *
+	 * @return	objet			retourne une instance de la classe
+	 * @author	Stephane F
+	 **/
+	public static function getInstance(){
+		if (!isset(self::$instance)) {
+			$class = __CLASS__;
+			self::$instance = false;
+			self::$instance = new $class();
+		}
+		return self::$instance;
+	}
+
+	/**
 	 * To add your own style
 	 * @param $css string your css
 	 * @return string css
@@ -171,9 +188,10 @@ class phpGraph {
 	 */
 	public function draw($data,$options=array(),$putInCache=false,$id=false) {
 
+		$nameOfFile = ($id ? $id : md5(date('Ymdhis')) );
 		# Cache
 		$nameOfFiles = glob($putInCache.'*.svg');
-		if ($putInCache != false) {
+		if ($putInCache != false && isset($nameOfFiles[0])) {
 			return file_get_contents($nameOfFiles[0]);
 		}
 		$return = '';
@@ -314,7 +332,7 @@ class phpGraph {
 							if (is_array($legends)) {
 								$options['legends'] = $legends[$line];
 							}
-							$pie .= $this->__drawDisk($datas,$options);
+							$pie .= $this->__drawDisk($datas,$options,$id);
 							$pie .= "\n".'</svg>'."\n";
 							break;
 						default:
@@ -355,7 +373,7 @@ class phpGraph {
 					if (is_array($legends)) {
 						$options['legends'] = $legends[$line];
 					}
-					$return .= $this->__drawDisk($datas,$options);
+					$return .= $this->__drawDisk($datas,$options,$id);
 					$return .= "\n".'</svg>'."\n";
 					$multi = true;
 				} else {
@@ -370,7 +388,7 @@ class phpGraph {
 				if (is_array($legends)) {
 					$options['legends'] = $legends;
 				}
-				$return .= $this->__drawDisk($data,$options);
+				$return .= $this->__drawDisk($data,$options,$id);
 				$return .= "\n".'</svg>'."\n";
 			}
 
@@ -378,7 +396,7 @@ class phpGraph {
 
 		$this->colors = array();
 		if ($putInCache) {
-			$this->putInCache(trim($return),md5(implode('',$nameOfFile)),$putInCache);
+			$this->putInCache(trim($return),$nameOfFile,$putInCache);
 			//file_put_contents($putInCache, trim($return));
 		} 
 		return $return;
@@ -696,7 +714,7 @@ class phpGraph {
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	protected function __drawDisk($data,$options=array()) {
+	protected function __drawDisk($data,$options=array(),$id=false) {
 
 		$options = array_merge($this->options,$options);
 
@@ -786,7 +804,7 @@ class phpGraph {
 
 
 		//Size of canevas will be bigger than grid size to display legends
-		$return = "\n".'<svg width="100%" height="100%" viewBox="0 0 '.(2*$radius+400).' '.(2*$radius+100+$titleHeight+$paddingTop+$heightLegends).'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" version="1.1">'."\n";
+		$return = "\n".'<svg width="100%" height="100%" viewBox="0 0 '.(2*$radius+400).' '.(2*$radius+100+$titleHeight+$paddingTop+$heightLegends).'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" version="1.1"'.($id ? ' id="'.$id.'"':'').'>'."\n";
 		$return .= "\n\t".'<defs>';
 		// $return .= "\n\t\t".'<marker id="Triangle"';
 		// $return .= "\n\t\t\t".'viewBox="0 0 10 10" refX="0" refY="5"';
