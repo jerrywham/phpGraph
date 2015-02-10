@@ -543,11 +543,11 @@ $G = new phpGraph();
     );
     echo $G->draw($p,array(
         'tooltips' => true,
-        'type' => 'bar'
+        'type' => 'line'
     ));
     //Results above...
     ?>
-    
+
     </div>
 </body>
 </html>
