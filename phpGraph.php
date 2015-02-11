@@ -13,11 +13,11 @@
 #    |	/				  \	 |	  |	   |	|			|
 #    |/____________________\_|____|____|____|___________|
 #
-# @update     2015-02-03
+# @update     2015-02-11
 # @copyright  2013-2015 Cyril MAGUIRE
 # @licence    http://www.cecill.info/licences/Licence_CeCILL_V2.1-fr.txt CONTRAT DE LICENCE DE LOGICIEL LIBRE CeCILL version 2.1
 # @link       http://jerrywham.github.io/phpGraph/
-# @version    1.3
+# @version    1.4
 #
 # ------------------- END LICENSE BLOCK -------------------
 /**
@@ -186,7 +186,7 @@ class phpGraph {
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	public function draw($data,$options=array(),$putInCache=false,$id=false) {
+	public function draw($data,$options=array(),$putInCache=false,$id=false,$minify=true) {
 
 		$nameOfFile = ($id ? $id : md5(date('Ymdhis')) );
 		# Cache
@@ -281,7 +281,9 @@ class phpGraph {
 				}
 			} else {
 				$i = 1;
+				$oldId = $id;
 				foreach ($data as $line => $datas) {
+					$id = $oldId.'-'.$line;
 					if (!isset($type[$line]) && !is_string($type) && is_numeric($line)) {
 						$type[$line] = 'line';
 					}
@@ -394,11 +396,15 @@ class phpGraph {
 
 		}
 
+		if ($minify) {
+			$return = preg_replace("/(\r\n|\n|\r)/s", " ", $return);
+			$return = str_replace(array("\t","\r\n","\n","\r",CHR(10),CHR(13)), '', trim($return));
+		}
+
 		$this->colors = array();
 		if ($putInCache) {
 			$this->putInCache(trim($return),$nameOfFile,$putInCache);
-			//file_put_contents($putInCache, trim($return));
-		} 
+		}
 		return $return;
 	}
 
@@ -805,7 +811,10 @@ class phpGraph {
 
 		//Size of canevas will be bigger than grid size to display legends
 		$return = "\n".'<svg width="100%" height="100%" viewBox="0 0 '.(2*$radius+400).' '.(2*$radius+100+$titleHeight+$paddingTop+$heightLegends).'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" version="1.1"'.($id ? ' id="'.$id.'"':'').'>'."\n";
-		$return .= "\n\t".'<defs>';
+		$return .= '<defs>';
+	    $return .= "\n\t\t".'<style type="text/css">//<![CDATA[
+	      '.$this->css.'
+	    ]]></style>'."\n";
 		// $return .= "\n\t\t".'<marker id="Triangle"';
 		// $return .= "\n\t\t\t".'viewBox="0 0 10 10" refX="0" refY="5"';
 		// $return .= "\n\t\t\t".'markerUnits="strokeWidth"';
@@ -824,7 +833,7 @@ class phpGraph {
 			$background = 'url(#'.$id.')';
 			$return .= "\t".'<rect x="0" y="0" width="'.(2*$radius+400).'" height="'.(2*$radius+100+$titleHeight+$paddingTop+$heightLegends).'" class="graph-stroke" fill="'.$background.'" fill-opacity="1"/>'."\n";
 		} else {
-			$return .= "\n\t".'</defs>'."\n";
+			$return .= '</defs>'."\n";
 		}
 		
 		if (isset($title)) {
@@ -958,7 +967,7 @@ class phpGraph {
 
 					$return .= "\n\t\t\t".'<path d=" M '.($originX+$cos2).' '.($originY+2*$radius+$sin2).' L '.($originX + $cosLeg2).' '.($originY + 2*$radius + $sinLeg2).' L '.($originX+$cosLeg2+$signe*30).' '.($originY + 2*$radius + $sinLeg2).'" fill="none" class="graph-line" stroke="'.$diskLegendsLineColor.'" stroke-opacity="0.5"  stroke-dasharray="2,2,2"/>';
 
-					$return .= "\n\t\t\t".'<text x="'.($originX + $cosLeg2 + $gapx + $signe*30*$pathGap).'" y="'.($originY + 2*$radius + $sinLeg2 + $gapy).'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">&nbsp;&nbsp;'.$LABEL.'</text>'."\n\t\t\t";
+					$return .= "\n\t\t\t".'<text x="'.($originX + $cosLeg2 + $gapx + $signe*30*$pathGap).'" y="'.($originY + 2*$radius + $sinLeg2 + $gapy).'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">  '.$LABEL.'</text>'."\n\t\t\t";
 				}
 				//End tooltips
 				if($tooltips == true && $key < ($lenght-1)) {
@@ -1566,9 +1575,11 @@ class phpGraph {
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	public function svg2vml($svg,$vml,$root,$url) {
+	public function svg2vml($svg,$vml,$root,$xsl='vendors/svg2vml/svg2vml.xsl',$xslpath='/svg2vml/') {
+		include_once 'svg2vml/xslt.php';
 		if(is_string($svg)){
-			$xsl = "vendors/svg2vml/svg2vml.xsl";# see http://vectorconverter.sourceforge.net/index.html
+			$xsl = str_replace('include href="XSL2', 'include href="'.$xslpath.'XSL2', file_get_contents($xsl));
+			# for $xsl, see http://vectorconverter.sourceforge.net/index.html
 			$xml_contents=$svg;
 			$from="/(<meta[^>]*[^\/]?)>/i";
 			$xml_contents=preg_replace($from,"$1/>",$xml_contents);
@@ -1576,20 +1587,50 @@ class phpGraph {
 			$xml_contents=preg_replace($from,"$1",$xml_contents);
 			$xml_contents=preg_replace("/<\!DOCTYPE[^>]+\>/i","",$xml_contents);	
 			$xml_contents=preg_replace("/<\?xml-stylesheet[^>]+\>/i","",$xml_contents);
+			$xml_contents=preg_replace("/(\r\n|\n|\r)/s", '', $xml_contents);
+			$xml_contents=str_replace(array("\r\n","\n","\r",CHR(10),CHR(13)), '', trim($xml_contents));
+			$xml_contents=preg_replace("/\<defs\>(\s*)\<style(.*)\<\/style\>(\s*)\<\/defs\>/", "", $xml_contents);
 
 			$xh=xslt_create();
-			$arguments=array('/_xml' =>$xml_contents,'/_xsl' => file_get_contents($xsl));
+			$arguments=array('/_xml' =>$xml_contents,'/_xsl' => $xsl);
 			$result=xslt_process($xh, 'arg:/_xml', 'arg:/_xsl', NULL, $arguments);
 			xslt_free($xh);
 
-			$result = str_replace('<?xml version="1.0"?>'."\n", '', $result);
-			file_put_contents($root.$vml, $result);
-			$output = "<div class=\"object\"><object type=\"text/html\" data=\"".Router::url($vml)."\" >";
-			$output .= "</object></div>\n";
-			$output = Tools::wmodeTransparent($output);
-			return $output;
+			if ($result) {
+			    $result = str_replace('<?xml version="1.0"?>'."\n", '', $result);
+			    $result = str_replace('><',">\n<",$result);
+    			file_put_contents($root.$vml, $result);
+    			$output = "<div class=\"object\"><object type=\"text/html\" data=\"".$root.$vml."\" >";
+    			$output .= "</object></div>\n";
+    			$output = $this->wmodeTransparent($output);
+    			return $output;
+			} else {
+				$f = str_replace(array('.html',PLX_PHPGRAPH),array('.png',PLX_PHPGRAPH_IMG),$root.$vml);
+				if (is_file($f)) {
+					$plxMotor = plxMotor::getInstance();
+					return '<img src="'.$plxMotor->urlRewrite($f).'" alt="graph" />';
+				}
+			}
 		} else{
 			return L_ERROR_FILE_NOT_FOUND;
+		}
+	}
+
+	/**
+	 * Méthode pour prendre en compte le mode transparent des iframes
+	 *
+	 * @parm	html	chaine de caractères à scanner
+	 * @return	string	chaine de caractères modifiée
+	 * @author	Stephane F
+	 **/
+	public function wmodeTransparent($html) {
+
+		if(strpos($html, "<embed src=" ) !== false) {
+			return str_replace('</param><embed', '</param><param name="wmode" value="transparent"></param><embed wmode="transparent" ', $html);
+		} elseif(strpos($html, 'feature=oembed') !== false) {
+			return str_replace('feature=oembed', 'feature=oembed&amp;wmode=transparent', $html);
+		} else {
+			return $html;
 		}
 	}
 
@@ -1619,26 +1660,25 @@ class phpGraph {
 	# Work in progress......
 	public function svgToPng($svg,$outputName='svg',$outputDir='data/img/',$width=800,$height=600) {
 		// exit();
-		//exec(escapeshellcmd('python svgtopng --'.$width.' --'.$height.' --o '.SIG_ROOT.$outputDir.$outputName.'.png '.$svg));
-		// exec("convert -version", $out);//On teste la présence d'imagick sur le serveur
-		// if (!empty($out)) {
-		// 	$im = new Imagick();
-		// 	$imagick->setBackgroundColor(new ImagickPixel('transparent'));
-		// 	$im->readImageBlob($svg);
+		exec("convert -version", $out);//On teste la présence d'imagick sur le serveur
+		if (!empty($out)) {
+			$im = new Imagick();
+			$imagick->setBackgroundColor(new ImagickPixel('transparent'));
+			$im->readImageBlob($svg);
 			/*png settings*/
-			// $im->setImageFormat("png24");
-			// $im->resizeImage($width, $height, imagick::FILTER_LANCZOS, 1);  /*Optional, if you need to resize*/
+			$im->setImageFormat("png24");
+			$im->resizeImage($width, $height, imagick::FILTER_LANCZOS, 1);  /*Optional, if you need to resize*/
 
 			/*jpeg*/
-			// $im->setImageFormat("jpeg");
-			// $im->adaptiveResizeImage($width, $height); /*Optional, if you need to resize*/
+			$im->setImageFormat("jpeg");
+			$im->adaptiveResizeImage($width, $height); /*Optional, if you need to resize*/
 
-			// $im->writeImage(SIG_ROOT.$outputDir.$outputName.'.png');
-			// // $im->writeImage(SIG_ROOT.$outputDir.$outputName.'.jpg');
-			// $im->clear();
-			// $im->destroy();
-			// echo '<img src="'.Router::url($outputDir.$outputName.'.png').'" alt="'.$outputName.'.png" />';
-		// }
+			$im->writeImage(SIG_ROOT.$outputDir.$outputName.'.png');
+			$im->writeImage(SIG_ROOT.$outputDir.$outputName.'.jpg');
+			$im->clear();
+			$im->destroy();
+			echo '<img src="'.Router::url($outputDir.$outputName.'.png').'" alt="'.$outputName.'.png" />';
+		}
 	}
 }
 ?>
