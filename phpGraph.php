@@ -489,9 +489,9 @@ class phpGraph {
 			} else {
 				//Line
 				if ($i == 0) {
-					$path .= 'M '.($i * $stepX + 50).' '.($titleHeight + 2 * $paddingTop).' L';
+					$path .= 'M '.$coordonnees1.' L';
 					//Tooltips and circles
-					$c .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($titleHeight + 2 * $paddingTop).'" r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+					$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 				} else {
 					$path .= "\n\t\t\t\t".$coordonnees1;
 					//Tooltips and circles
