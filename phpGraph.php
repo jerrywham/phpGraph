@@ -1,90 +1,86 @@
 <?php 
-
 # ------------------ BEGIN LICENSE BLOCK ------------------
-#	  ___________________________________________________
-#    |													|
-#    |					PHP GRAPH	    ____			|
-#    |								   |	|			|
-#    |						  ____	   |	|			|
-#    |				 /\		 |	  |	   |	|			|
-#    |			   /   \	 |	  |	   |	|			|
-#    |		/\	 /		\	 |	  |____|	|			|
-#    |	  /   \/		 \	 |	  |	   |	|			|
-#    |	/				  \	 |	  |	   |	|			|
-#    |/____________________\_|____|____|____|___________|
 #
-# @update     2015-02-11
-# @copyright  2013-2015 Cyril MAGUIRE
+##################################################################
+#                                                                #
+# ▓▓▓▓▓  ▓▓  ▓▓ ▓▓▓▓▓          ▓▓▓▓  ▓▓▓▓▓   ▓▓▓▓  ▓▓▓▓▓  ▓▓  ▓▓ #
+# ▓▓  ▓▓ ▓▓  ▓▓ ▓▓  ▓▓        ▓▓  ▓▓ ▓▓  ▓▓ ▓▓  ▓▓ ▓▓  ▓▓ ▓▓  ▓▓ #
+# ▓▓  ▓▓ ▓▓  ▓▓ ▓▓  ▓▓        ▓▓     ▓▓  ▓▓ ▓▓  ▓▓ ▓▓  ▓▓ ▓▓  ▓▓ #
+# ▓▓▓▓▓  ▓▓▓▓▓▓ ▓▓▓▓▓         ▓▓ ▓▓▓ ▓▓▓▓▓  ▓▓▓▓▓▓ ▓▓▓▓▓  ▓▓▓▓▓▓ #
+# ▓▓     ▓▓  ▓▓ ▓▓            ▓▓  ▓▓ ▓▓  ▓▓ ▓▓  ▓▓ ▓▓     ▓▓  ▓▓ #
+# ▓▓     ▓▓  ▓▓ ▓▓            ▓▓  ▓▓ ▓▓  ▓▓ ▓▓  ▓▓ ▓▓     ▓▓  ▓▓ #
+# ▓▓     ▓▓  ▓▓ ▓▓             ▓▓▓▓  ▓▓  ▓▓ ▓▓  ▓▓ ▓▓     ▓▓  ▓▓ #
+#                                                                #
+##################################################################
+# @update     2017-12-27
+# @copyright  2013-2017 Cyril MAGUIRE
 # @licence    http://www.cecill.info/licences/Licence_CeCILL_V2.1-fr.txt CONTRAT DE LICENCE DE LOGICIEL LIBRE CeCILL version 2.1
 # @link       http://jerrywham.github.io/phpGraph/
 # @version    1.4
 #
 # ------------------- END LICENSE BLOCK -------------------
-/**
- * @package    SIGesTH
- * @author     MAGUIRE Cyril <contact@ecyseo.net>
- * @copyright  2009-2015 Cyril MAGUIRE, <contact@ecyseo.net>
- * @license    Licensed under the CeCILL v2.1 license. http://www.cecill.info/licences.fr.html
- */
 class phpGraph {
 
 	# Basic css style
 	protected $css = '
-		.draw {
+		/**/.draw {
 			width:70%;/*Adjust this value to resize svg automatically*/
 			margin:auto;
 		}
-		svg {/*width and height of svg is 100% of dimension of its parent (draw class here)*/
+		/**/svg {/*width and height of svg is 100% of dimension of its parent (draw class here)*/
 			display: block;
 			margin:auto;
 			margin-bottom: 50px;
 		}
-		.graph-title {
+		/**/.graph-title {
 			stroke-width:4;
 			stroke:transparent;
 			fill:#000033;
 			font-size: 1.2em;
 		}
-		.graph-grid {
+		/**/.graph-grid {
 			stroke-width:1;
 			stroke:#c4c4c4;
 		}
-		.graph-stroke {
+		/**/.graph-stroke {
 			stroke-width:2;
 			stroke:#424242;
 		}
-		.graph-legends {}
-		.graph-legend {}
-		.graph-legend-stroke {}
-		.graph-line {
+		/**/.graph-legends {}
+		/**/.graph-active .graph-legend {
+			font-size:0.6em;
+		}
+		/**/.graph-legend-stroke {}
+		/**/.graph-line {
 			stroke-linejoin:round;
 			stroke-width:2;
 		}
-		.graph-fill {
+		/**/.graph-fill {
 			stroke-width:0;
 		}
-		.graph-bar {}
-		.graph-point {
+		/**/.graph-bar {}
+		/**/.graph-point {
 			stroke-width:1;
 			fill:#fff;
 			fill-opacity:1;
 			stroke-opacity:1;
 		}
-		.graph-point-active:hover {
+		/**/.graph-point-active:hover {
 			stroke-width:5;
 			transition-duration:.9s;
 			cursor: pointer;
 		}
-		 title.graph-tooltip {
+		/**/title.graph-tooltip {
 			background-color:#d6d6d6;
 		}
-		.graph-pie {
+		/**/.graph-pie {
 			cursor: pointer;
 			stroke-width:1;
 			stroke:#fff;
 		}
-		text {
+		/**/text {
 			fill:#000;
+			font-size:0.7em;
 		}
 	';
 
@@ -112,11 +108,12 @@ class phpGraph {
 		'responsive' => true,// (bool) to avoid svg to be responsive (dimensions fixed)
 		'paddingLegendX' => 10,//We add 10 units in viewbox to display x legend correctly
 		'paddingLegendY' => 0,//Padding to display y legend correctly, if needed, for pie and ring
+		'transform' => null,//Transformation of the text of the legend
+		'marginTop' => 0,//Margin of the legend when use transform
 	);
 	# authorized types
 	protected $types = array('line','line','bar','pie','ring','stock','h-stock');
-
-	private static $instance;
+	protected $periodOfCache = 1;//A REGLER ET A VERIFIER
 	
 	//protected $colors = array();
 
@@ -149,21 +146,6 @@ class phpGraph {
 	}
 
 	/**
-	 * Méthode qui se charger de créer le Singleton
-	 *
-	 * @return	objet			retourne une instance de la classe
-	 * @author	Stephane F
-	 **/
-	public static function getInstance(){
-		if (!isset(self::$instance)) {
-			$class = __CLASS__;
-			self::$instance = false;
-			self::$instance = new $class();
-		}
-		return self::$instance;
-	}
-
-	/**
 	 * To add your own style
 	 * @param $css string your css
 	 * @return string css
@@ -186,13 +168,21 @@ class phpGraph {
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	public function draw($data,$options=array(),$putInCache=false,$id=false,$minify=true) {
+	public function draw($data,$options=array(),$putInCache=false,$id=false,$txt=false) {
 
-		$nameOfFile = ($id ? $id : md5(date('Ymdhis')) );
+		if ($id) {
+			$this->css = str_replace('/**/', '#'.$id.' ', $this->css);
+		}
+
+		$downloadLink = '<p class="downloadSvg"><a href="'.Router::url('accueil/downloadSvg/'.$id).'" onclick="exportToPng(this.href,\''.$id.'\');return false;">'.$txt.'</a></p>';
+
 		# Cache
 		$nameOfFiles = glob($putInCache.'*.svg');
 		if ($putInCache != false && isset($nameOfFiles[0])) {
-			return file_get_contents($nameOfFiles[0]);
+			$stat = stat($nameOfFiles[0]);
+			if ($stat['mtime'] > (time() - $this->periodOfCache) ) {
+				return file_get_contents($nameOfFiles[0]).($id ? $downloadLink : '');
+			}
 		}
 		$return = '';
 
@@ -250,7 +240,7 @@ class phpGraph {
 				$return .= $this->__titleDef($title,$width,$titleHeight);
 			}
 			# Legends x axis and vertical grid
-			extract($this->__XAxisDef($type,$Xmin,$Xmax,$XM,$stepX,$unitX,$HEIGHT,$paddingTop,$titleHeight,$labels,$lenght));
+			extract($this->__XAxisDef($type,$Xmin,$Xmax,$XM,$stepX,$unitX,$HEIGHT,$paddingTop,$titleHeight,$labels,$lenght, $transform));
 
 			# Legendes y axis and horizontal grid
 			extract($this->__YAxisDef($type,$width,$min,$max,$steps,$HEIGHT,$titleHeight,$paddingTop,$paddingLegendX,$unitY,$labels));
@@ -281,9 +271,7 @@ class phpGraph {
 				}
 			} else {
 				$i = 1;
-				$oldId = $id;
 				foreach ($data as $line => $datas) {
-					$id = $oldId.'-'.$line;
 					if (!isset($type[$line]) && !is_string($type) && is_numeric($line)) {
 						$type[$line] = 'line';
 					}
@@ -344,7 +332,7 @@ class phpGraph {
 				}
 			}
 			# legends
-			$return .= $this->__legendsDef($legends,$type,$stroke,$HEIGHT,$paddingTop);
+			$return .= $this->__legendsDef($legends,$type,$stroke,$HEIGHT,$paddingTop,$marginTop);
 			$return .= "\n".'</svg>'."\n";
 			$return .= $pie;
 		} else {
@@ -396,16 +384,12 @@ class phpGraph {
 
 		}
 
-		if ($minify) {
-			$return = preg_replace("/(\r\n|\n|\r)/s", " ", $return);
-			$return = str_replace(array("\t","\r\n","\n","\r",CHR(10),CHR(13)), '', trim($return));
-		}
-
 		$this->colors = array();
-		if ($putInCache) {
-			$this->putInCache(trim($return),$nameOfFile,$putInCache);
-		}
-		return $return;
+		if ($putInCache && $stat['mtime'] > (time() - $this->periodOfCache) ) {
+			$this->putInCache(trim($return),md5(implode('',$nameOfFile)),$putInCache);
+			//file_put_contents($putInCache, trim($return));
+		} 
+		return $return.($id ? $downloadLink : '');
 	}
 
 	/**
@@ -489,9 +473,9 @@ class phpGraph {
 			} else {
 				//Line
 				if ($i == 0) {
-					$path .= 'M '.$coordonnees1.' L';
+					$path .= 'M '.($i * $stepX + 50).' '.($titleHeight + 2 * $paddingTop).' L';
 					//Tooltips and circles
-					$c .= "\n\t\t\t".'<circle '.$coordonneesCircle1.' r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
+					$c .= "\n\t\t\t".'<circle cx="'.($i * $stepX + 50).'" cy="'.($titleHeight + 2 * $paddingTop).'" r="3" stroke="'.$stroke.'" class="graph-point-active"/>';
 				} else {
 					$path .= "\n\t\t\t\t".$coordonnees1;
 					//Tooltips and circles
@@ -811,8 +795,8 @@ class phpGraph {
 
 		//Size of canevas will be bigger than grid size to display legends
 		$return = "\n".'<svg width="100%" height="100%" viewBox="0 0 '.(2*$radius+400).' '.(2*$radius+100+$titleHeight+$paddingTop+$heightLegends).'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" version="1.1"'.($id ? ' id="'.$id.'"':'').'>'."\n";
-		$return .= '<defs>';
-	    $return .= "\n\t\t".'<style type="text/css">//<![CDATA[
+		$return .= "\n\t".'<defs>
+	    <style type="text/css">//<![CDATA[
 	      '.$this->css.'
 	    ]]></style>'."\n";
 		// $return .= "\n\t\t".'<marker id="Triangle"';
@@ -833,7 +817,7 @@ class phpGraph {
 			$background = 'url(#'.$id.')';
 			$return .= "\t".'<rect x="0" y="0" width="'.(2*$radius+400).'" height="'.(2*$radius+100+$titleHeight+$paddingTop+$heightLegends).'" class="graph-stroke" fill="'.$background.'" fill-opacity="1"/>'."\n";
 		} else {
-			$return .= '</defs>'."\n";
+			$return .= "\n\t".'</defs>'."\n";
 		}
 		
 		if (isset($title)) {
@@ -967,7 +951,7 @@ class phpGraph {
 
 					$return .= "\n\t\t\t".'<path d=" M '.($originX+$cos2).' '.($originY+2*$radius+$sin2).' L '.($originX + $cosLeg2).' '.($originY + 2*$radius + $sinLeg2).' L '.($originX+$cosLeg2+$signe*30).' '.($originY + 2*$radius + $sinLeg2).'" fill="none" class="graph-line" stroke="'.$diskLegendsLineColor.'" stroke-opacity="0.5"  stroke-dasharray="2,2,2"/>';
 
-					$return .= "\n\t\t\t".'<text x="'.($originX + $cosLeg2 + $gapx + $signe*30*$pathGap).'" y="'.($originY + 2*$radius + $sinLeg2 + $gapy).'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">  '.$LABEL.'</text>'."\n\t\t\t";
+					$return .= "\n\t\t\t".'<text x="'.($originX + $cosLeg2 + $gapx + $signe*30*$pathGap).'" y="'.($originY + 2*$radius + $sinLeg2 + $gapy).'" class="graph-legend" stroke="darkgrey" stroke-opacity="0.5">&nbsp;&nbsp;'.$LABEL.'</text>'."\n\t\t\t";
 				}
 				//End tooltips
 				if($tooltips == true && $key < ($lenght-1)) {
@@ -1019,16 +1003,20 @@ class phpGraph {
 	protected function __drawStock($data,$height,$HEIGHT,$stepX,$unitY,$lenght,$min,$max,$options,$i,$labels,$id) {
 		$error = null;
 		if (!isset($data[$labels[$i]]['open'])) { 
-			$error[] = 'open';
+			$data[$labels[$i]]['open'] = 0;
+			//$error[] = 'open';
 		}
 		if (!isset($data[$labels[$i]]['close'])) { 
-			$error[] = 'close';
+			$data[$labels[$i]]['close'] = 0;
+			//$error[] = 'close';
 		}
 		if (!isset($data[$labels[$i]]['max'])) { 
-			$error[] = 'max';
+			$data[$labels[$i]]['max'] = 0;
+			//$error[] = 'max';
 		}
 		if (!isset($data[$labels[$i]]['min'])) { 
-			$error[] = 'min';
+			$data[$labels[$i]]['min'] = 0;
+			//$error[] = 'min';
 		}
 		if ($error) {
 			$return = "\t\t".'<path id="chemin" d="M '.($i * $stepX + 50).' '.($HEIGHT-$height+10).' V '.$height.'" class="graph-line" stroke="transparent" fill="#fff" fill-opacity="0"/>'."\n";
@@ -1312,11 +1300,12 @@ class phpGraph {
 	 * @param $titleHeight integer height of title
 	 * @param $labels array Array of labels
 	 * @param $lenght integer distance between min and max values
+	 * @param $transform integer, rotation of text of legend
 	 * @return array of variables needed for draw method
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	protected function __XAxisDef($type,$Xmin,$Xmax,$XM,$stepX,$unitX,$HEIGHT,$paddingTop,$titleHeight,$labels,$lenght) {
+	protected function __XAxisDef($type,$Xmin,$Xmax,$XM,$stepX,$unitX,$HEIGHT,$paddingTop,$titleHeight,$labels,$lenght,$transform) {
 		$gridV = $x = '';
 		$x .= "\t".'<g class="graph-x">'."\n";
 		if (is_array($type) && in_array('h-stock', $type) ) {
@@ -1324,7 +1313,7 @@ class phpGraph {
 				//1 graduation every $steps units
 				$step = $unitX*$i;
 
-				$x .= "\t\t".'<text x="'.(50+$step).'" y="'.($HEIGHT+2*$paddingTop).'" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle">'.$i.'</text>'."\n";
+				$x .= "\t\t".'<text x="'.(($transform !== null ? 25 : 50)+$step).'" y="'.($HEIGHT+2*$paddingTop).'"'.($transform !== null ? ' transform="translate(0,'.(3*$paddingTop).')rotate('.$transform.','.(($transform !== null ? 25 : 50)+$step).','.($HEIGHT+2*$paddingTop).')"' : '').' text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle">'.$i.'</text>'."\n";
 				//Vertical grid
 				if ($i != $Xmax) {
 					$gridV .= "\t\t".'<path d="M '.(50+$step).' '.($paddingTop+$titleHeight).' V '.($HEIGHT).'"/>'."\n" ;
@@ -1334,7 +1323,7 @@ class phpGraph {
 			$i=0;
 			foreach ($labels as $key => $label) {
 				//We add a gap of 50 units 
-				$x .= "\t\t".'<text x="'.($i*$stepX+50).'" y="'.($HEIGHT+2*$paddingTop).'" text-anchor="middle">'.$label.'</text>'."\n";
+				$x .= "\t\t".'<text x="'.($i*$stepX+($transform !== null ? 25 : 50)).'" y="'.($HEIGHT+2*$paddingTop).'"'.($transform !== null ? ' transform="translate(0,'.(3*$paddingTop).')rotate('.$transform.','.($i*$stepX+($transform !== null ? 25 : 50)).','.($HEIGHT+2*$paddingTop).')"' : '').' text-anchor="middle">'.$label.'</text>'."\n";
 				//Vertical grid
 				if ($i != 0 && $i != $lenght) {
 					$gridV .= "\t\t".'<path d="M '.($i*$stepX+50).' '.($paddingTop+$titleHeight).' V '.($HEIGHT).'"/>'."\n" ;
@@ -1402,7 +1391,7 @@ class phpGraph {
 	 *
 	 * @author Cyril MAGUIRE
 	 */
-	protected function __legendsDef($legends,$type,$stroke,$HEIGHT,$paddingTop) {
+	protected function __legendsDef($legends,$type,$stroke,$HEIGHT,$paddingTop,$marginTop=0) {
 		if (isset($legends) && !empty($legends)) {
 			$leg = "\n\t".'<g class="graph-legends">';
 			if (!is_array($legends)) {
@@ -1411,11 +1400,11 @@ class phpGraph {
 			foreach ($legends as $key => $value) {
 				if (isset($type[$key]) && $type[$key] != 'pie' && $type[$key] != 'ring') {
 					if (is_array($stroke) && isset($stroke[$key])) {
-						$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke[$key].'" class="graph-legend-stroke"/>';
+						$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)+$marginTop).'" width="10" height="10" fill="'.$stroke[$key].'" class="graph-legend-stroke"/>';
 					} else {
-						$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)).'" width="10" height="10" fill="'.$stroke.'" class="graph-legend-stroke"/>';
+						$leg .= "\n\t\t".'<rect x="50" y="'.($HEIGHT+30+$key*(2*$paddingTop)+$marginTop).'" width="10" height="10" fill="'.$stroke.'" class="graph-legend-stroke"/>';
 					}
-					$leg .= "\n\t\t".'<text x="70" y="'.($HEIGHT+40+$key*(2*$paddingTop)).'" text-anchor="start" class="graph-legend">'.$value.'</text>';
+					$leg .= "\n\t\t".'<text x="70" y="'.($HEIGHT+40+$key*(2*$paddingTop)+$marginTop).'" text-anchor="start" class="graph-legend">'.$value.'</text>';
 				}
 				if (is_array($type) && (in_array('stock', $type) || in_array('h-stock', $type))) {
 					if (is_array($stroke)) {
@@ -1495,8 +1484,8 @@ class phpGraph {
 		} else {
 			$return = "\n".'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:lang="fr" xmlns:xlink="http://www.w3/org/1999/xlink" class="graph" width="'.$dimensions['width'].'" height="'.$dimensions['height'].'" viewBox="0 0 '.$dimensions['widthViewBox'].' '.($dimensions['heightViewBox']).'" preserveAspectRatio="xMidYMid meet"'.($id ? ' id="'.$id.'"':'').'>'."\n";
 		}
-		$return .= "\n".'<defs>
-	    <style type="text/css"><![CDATA[
+		$return .= '<defs>
+	    <style type="text/css">//<![CDATA[
 	      '.$this->css.'
 	    ]]></style>'."\n".'</defs>'."\n";
   		return $return;
@@ -1576,7 +1565,6 @@ class phpGraph {
 	 * @author Cyril MAGUIRE
 	 */
 	public function svg2vml($svg,$vml,$root,$xsl='vendors/svg2vml/svg2vml.xsl',$xslpath='/svg2vml/') {
-		include_once 'svg2vml/xslt.php';
 		if(is_string($svg)){
 			$xsl = str_replace('include href="XSL2', 'include href="'.$xslpath.'XSL2', file_get_contents($xsl));
 			# for $xsl, see http://vectorconverter.sourceforge.net/index.html
@@ -1590,25 +1578,27 @@ class phpGraph {
 			$xml_contents=preg_replace("/(\r\n|\n|\r)/s", '', $xml_contents);
 			$xml_contents=str_replace(array("\r\n","\n","\r",CHR(10),CHR(13)), '', trim($xml_contents));
 			$xml_contents=preg_replace("/\<defs\>(\s*)\<style(.*)\<\/style\>(\s*)\<\/defs\>/", "", $xml_contents);
-
+			
 			$xh=xslt_create();
+			if ($xh === false) {return false;}
+			xslt_set_base($xh,SIG_ROOT);
 			$arguments=array('/_xml' =>$xml_contents,'/_xsl' => $xsl);
 			$result=xslt_process($xh, 'arg:/_xml', 'arg:/_xsl', NULL, $arguments);
 			xslt_free($xh);
-
-			if ($result) {
+			if ($result !== false) {
 			    $result = str_replace('<?xml version="1.0"?>'."\n", '', $result);
 			    $result = str_replace('><',">\n<",$result);
     			file_put_contents($root.$vml, $result);
-    			$output = "<div class=\"object\"><object type=\"text/html\" data=\"".$root.$vml."\" >";
+    			$output = "<div class=\"object\"><object type=\"text/html\" data=\"".Router::url($vml)."\" >";
     			$output .= "</object></div>\n";
     			$output = $this->wmodeTransparent($output);
     			return $output;
 			} else {
-				$f = str_replace(array('.html',PLX_PHPGRAPH),array('.png',PLX_PHPGRAPH_IMG),$root.$vml);
-				if (is_file($f)) {
-					$plxMotor = plxMotor::getInstance();
-					return '<img src="'.$plxMotor->urlRewrite($f).'" alt="graph" />';
+				if (Config::$DEBUG == 1) {
+					libxml_use_internal_errors(true);
+				    echo '<pre style="border: 1px solid #e3af43; background-color: #f8edd5; padding: 10px;color:#111;white-space: pre;white-space: pre-wrap;word-wrap: break-word;">'; print_r(libxml_get_last_error());print_r(libxml_get_errors());echo('</pre>');
+				} else {
+					return false;
 				}
 			}
 		} else{
@@ -1633,6 +1623,7 @@ class phpGraph {
 			return $html;
 		}
 	}
+
 
 	/**
 	 * Put svg file in cache
@@ -1661,7 +1652,7 @@ class phpGraph {
 	public function svgToPng($svg,$outputName='svg',$outputDir='data/img/',$width=800,$height=600) {
 		// exit();
 		exec("convert -version", $out);//On teste la présence d'imagick sur le serveur
-		if (!empty($out)) {
+		if (!empty($out) && class_exists('Imagick')) {
 			$im = new Imagick();
 			$imagick->setBackgroundColor(new ImagickPixel('transparent'));
 			$im->readImageBlob($svg);
@@ -1678,6 +1669,9 @@ class phpGraph {
 			$im->clear();
 			$im->destroy();
 			echo '<img src="'.Router::url($outputDir.$outputName.'.png').'" alt="'.$outputName.'.png" />';
+		} else {
+			$return = array();
+			exec(escapeshellcmd('python '.SIG_CORE.'vendors/convertPython/svgtopng --'.$width.' --'.$height.' --o '.SIG_ROOT.$outputDir.$outputName.'.png '.$svg));
 		}
 	}
 }
