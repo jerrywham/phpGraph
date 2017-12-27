@@ -174,7 +174,7 @@ class phpGraph {
 			$this->css = str_replace('/**/', '#'.$id.' ', $this->css);
 		}
 
-		$downloadLink = '<p class="downloadSvg"><a href="'.Router::url('accueil/downloadSvg/'.$id).'" onclick="exportToPng(this.href,\''.$id.'\');return false;">'.$txt.'</a></p>';
+		$downloadLink = '<p class="downloadSvg"><a href="'.$id.'">'.$txt.'</a></p>';
 
 		# Cache
 		$nameOfFiles = glob($putInCache.'*.svg');
