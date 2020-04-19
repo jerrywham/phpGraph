@@ -24,7 +24,7 @@
 # ------------------- END LICENSE BLOCK -------------------
 
 //First we include the library
-include('phpGraph.php');
+include('bin/phpGraph.php');
 
 //First sample
 $flot = [
