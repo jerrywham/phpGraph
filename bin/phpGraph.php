@@ -21,6 +21,12 @@
 # ------------------- END LICENSE BLOCK -------------------
 class phpGraph
 {
+	const TYPE_LINE = 'line';
+	const TYPE_BAR = 'bar';
+	const TYPE_PIE = 'pie';
+	const TYPE_RING = 'ring';
+	const TYPE_STOCK ='stock';
+	const TYPE_H_STOCK ='h-stock';
 
 	# Basic css style
 	protected $css = '
@@ -89,7 +95,7 @@ class phpGraph
 		'width'                => null,// (int) width of grid
 		'height'               => null,// (int) height of grid
 		'paddingTop'           => 10,// (int)
-		'type'                 => 'line',// (string) line, bar, pie, ring, stock or h-stock (todo curve)
+		'type'                 => self::TYPE_LINE,// (string) line, bar, pie, ring, stock or h-stock (todo curve)
 		'steps'                => null,// (int) 2 graduations on y-axis are separated by $steps units. "steps" is automatically calculated but we can set the value with integer. No effect on stock and h-stock charts
 		'filled'               => true,// (bool) to fill lines/histograms/disks
 		'tooltips'             => false,// (bool) to show tooltips
@@ -113,8 +119,10 @@ class phpGraph
 		'marginTop'            => 0,//Margin of the legend when use transform
 	];
 	# authorized types
-	protected $types         = ['line', 'line', 'bar', 'pie', 'ring', 'stock', 'h-stock'];
+	protected $types         = [self::TYPE_LINE, self::TYPE_BAR, self::TYPE_PIE, self::TYPE_RING, self::TYPE_STOCK, self::TYPE_H_STOCK];
 	protected $periodOfCache = 1;//A REGLER ET A VERIFIER
+
+	private $colors = [];
 
 	//protected $colors = array();
 
@@ -213,12 +221,15 @@ class phpGraph
 
 		$heightLegends = 0;
 		if (isset($legends) && !empty($legends)) {
+			if (\is_string($legends)) {
+				$legends = [$legends];
+			}
 			$heightLegends = count($legends) * 30 + 2 * $paddingTop;
 		}
 
 		$pie = '';
 
-		if ($type != 'pie' && $type != 'ring') {
+		if ($type != self::TYPE_PIE && $type != self::TYPE_RING) {
 			# looking for min and max
 			extract($this->__minMax($data, $type));
 			$options['type'] = $type;
@@ -236,10 +247,10 @@ class phpGraph
 			# Size of canevas will be bigger than grid size to display legends
 			$return = $this->__header($headerDimensions, $responsive, $id);
 
-			if ($type == 'stock' || (is_array($type) && in_array('stock', $type))) {
+			if ($type == self::TYPE_STOCK || (is_array($type) && in_array(self::TYPE_STOCK, $type))) {
 				$plotLimit = $this->__stockDef();
 			}
-			if ($type == 'h-stock' || (is_array($type) && in_array('h-stock', $type))) {
+			if ($type == self::TYPE_H_STOCK || (is_array($type) && in_array(self::TYPE_H_STOCK, $type))) {
 				$plotLimit = $this->__hstockDef();
 			}
 			# we draw the grid
@@ -268,10 +279,10 @@ class phpGraph
 				}
 				$options['stroke'] = is_array($stroke) ? $stroke[0] : $stroke;
 				switch ($type) {
-					case 'line':
+					case self::TYPE_LINE:
 						$return .= $this->__drawLine($data, $height, $HEIGHT, $stepX, $unitY, $lenght, $min, $max, $options);
 						break;
-					case 'bar':
+					case self::TYPE_BAR:
 						$return .= $this->__drawBar($data, $height, $HEIGHT, $stepX, $unitY, $lenght, $min, $max, $options);
 						break;
 					default:
@@ -282,10 +293,10 @@ class phpGraph
 				$i = 1;
 				foreach ($data as $line => $datas) {
 					if (!isset($type[ $line ]) && !is_string($type) && is_numeric($line)) {
-						$type[ $line ] = 'line';
+						$type[ $line ] = self::TYPE_LINE;
 					}
 					if (!isset($type[ $line ]) && !is_string($type) && !is_numeric($line)) {
-						$type[ $line ] = 'stock';
+						$type[ $line ] = self::TYPE_STOCK;
 					}
 					if (is_string($options['type'])) {
 						$type = [];
@@ -302,27 +313,27 @@ class phpGraph
 					$options['stroke'] = $STROKE = $stroke[ $line ];
 					$options['fill'] = $stroke[ $line ];
 					switch ($type[ $line ]) {
-						case 'line':
+						case self::TYPE_LINE:
 							$return .= $this->__drawLine($datas, $height, $HEIGHT, $stepX, $unitY, $lenght, $min, $max, $options);
 							break;
-						case 'bar':
+						case self::TYPE_BAR:
 							$return .= $this->__drawBar($datas, $height, $HEIGHT, $stepX, $unitY, $lenght, $min, $max, $options);
 							break;
-						case 'stock':
+						case self::TYPE_STOCK:
 							$id = rand();
 							$return .= str_replace(['id="plotLimit"', 'stroke=""'], ['id="plotLimit' . $id . '"', 'stroke="' . $stroke[ $line ] . '"'], $plotLimit);
 							$return .= $this->__drawStock($data, $height, $HEIGHT, $stepX, $unitY, $lenght, $min, $max, $options, $i, $labels, $id);
 							$i++;
 							break;
-						case 'h-stock':
+						case self::TYPE_H_STOCK:
 							$id = rand();
 							$return .= str_replace(['id="plotLimit"', 'stroke=""'], ['id="plotLimit' . $id . '"', 'stroke="' . $stroke[ $line ] . '"'], $plotLimit);
 							$return .= $this->__drawHstock($data, $HEIGHT, $stepX, $unitX, $unitY, $lenght, $Xmin, $Xmax, $options, $i, $labels, $id);
 							$i++;
 							break;
-						case 'ring':
-							$options['subtype'] = 'ring';
-						case 'pie':
+						case self::TYPE_RING:
+							$options['subtype'] = self::TYPE_RING;
+						case self::TYPE_PIE:
 							$options['multi'] = $multi;
 							if (is_array($stroke)) {
 								$options['stroke'] = $stroke[ $line ];
@@ -420,7 +431,7 @@ class phpGraph
 		$multi = false;
 		//For each diagrams with several lines/histograms
 		foreach ($data as $line => $datas) {
-			if ($type == 'stock' || (is_array($type) && in_array('stock', $type)) || $type == 'h-stock' || (is_array($type) && in_array('h-stock', $type))) {
+			if ($type == self::TYPE_STOCK || (is_array($type) && in_array(self::TYPE_STOCK, $type)) || $type == self::TYPE_H_STOCK || (is_array($type) && in_array(self::TYPE_H_STOCK, $type))) {
 				$arrayOfMin[] = isset($datas['min']) ? floor($datas['min']) : 0;
 				$arrayOfMax[] = isset($datas['max']) ? ceil($datas['max']) : 0;
 				$arrayOfLenght[] = count($data);
@@ -455,7 +466,7 @@ class phpGraph
 
 			$labels = array_unique($labels);
 
-			if ($type == 'h-stock' || (is_array($type) && in_array('h-stock', $type))) {
+			if ($type == self::TYPE_H_STOCK || (is_array($type) && in_array(self::TYPE_H_STOCK, $type))) {
 				$min = 0;
 				$max = count($labels);
 				$Xmax = max($arrayOfMax);
@@ -466,7 +477,7 @@ class phpGraph
 				$max = max($arrayOfMax);
 				$lenght = max($arrayOfLenght);
 			}
-			if ($type == 'stock' || (is_array($type) && in_array('stock', $type))) {
+			if ($type == self::TYPE_STOCK || (is_array($type) && in_array(self::TYPE_STOCK, $type))) {
 				array_unshift($labels, '');
 				$labels[] = '';
 				$lenght += 2;
@@ -499,7 +510,7 @@ class phpGraph
 	protected function __xAxisConfig($type, $width, $max, $Xmax, $Xmin, $lenght, $options = false)
 	{
 		$XM = $stepX = $unitX = null;
-		if ($type == 'h-stock' || (is_array($type) && in_array('h-stock', $type))) {
+		if ($type == self::TYPE_H_STOCK || (is_array($type) && in_array(self::TYPE_H_STOCK, $type))) {
 
 			$l = strlen(abs($Xmax)) - 1;
 			if ($l == 0) {
@@ -656,7 +667,7 @@ class phpGraph
 	{
 		$gridV = $x = '';
 		$x .= "\t" . '<g class="graph-x">' . "\n";
-		if (is_array($type) && in_array('h-stock', $type)) {
+		if (is_array($type) && in_array(self::TYPE_H_STOCK, $type)) {
 			for ($i = $Xmin; $i <= $XM; $i += $stepX) {
 				//1 graduation every $steps units
 				$step = $unitX * $i;
@@ -719,7 +730,7 @@ class phpGraph
 			}
 
 			if ($stepY >= ($titleHeight + $paddingTop + $paddingLegendX)) {
-				if (is_array($type) && in_array('h-stock', $type) && isset($labels[ $i - 1 ])) {
+				if (is_array($type) && in_array(self::TYPE_H_STOCK, $type) && isset($labels[ $i - 1 ])) {
 					$y .= "\t\t" . '<g class="graph-active"><text x="40" y="' . $stepY . '" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle" >' . ($i > 0 ? (strlen($labels[ $i - 1 ]) > 3 ? substr($labels[ $i - 1 ], 0, 3) . '.</text><title>' . $labels[ $i - 1 ] . '</title>' : $labels[ $i - 1 ] . '</text>') : '</text>') . "</g>\n";
 				} else {
 					$y .= "\t\t" . '<text x="40" y="' . $stepY . '" text-anchor="end" baseline-shift="-1ex" dominant-baseline="middle" >' . $i . '</text>';
@@ -1552,7 +1563,7 @@ class phpGraph
 
 			$return .= $leg;
 		}
-		if ($type == 'ring' || isset($subtype)) {
+		if ($type == self::TYPE_RING || isset($subtype)) {
 			$return .= '<circle cx="' . $originX . '" cy="' . ($originY + 2 * $radius) . '" r="' . ($radius / 2) . '" fill="' . $background . '" class="graph-pie"/>';
 		}
 
@@ -1580,7 +1591,7 @@ class phpGraph
 				$legends = [0 => $legends];
 			}
 			foreach ($legends as $key => $value) {
-				if (isset($type[ $key ]) && $type[ $key ] != 'pie' && $type[ $key ] != 'ring') {
+				if (isset($type[ $key ]) && $type[ $key ] != self::TYPE_PIE && $type[ $key ] != self::TYPE_RING) {
 					if (is_array($stroke) && isset($stroke[ $key ])) {
 						$leg .= "\n\t\t" . '<rect x="50" y="' . ($HEIGHT + 30 + $key * (2 * $paddingTop) + $marginTop) . '" width="10" height="10" fill="' . $stroke[ $key ] . '" class="graph-legend-stroke"/>';
 					} else {
@@ -1588,7 +1599,7 @@ class phpGraph
 					}
 					$leg .= "\n\t\t" . '<text x="70" y="' . ($HEIGHT + 40 + $key * (2 * $paddingTop) + $marginTop) . '" text-anchor="start" class="graph-legend">' . $value . '</text>';
 				}
-				if (is_array($type) && (in_array('stock', $type) || in_array('h-stock', $type))) {
+				if (is_array($type) && (in_array(self::TYPE_STOCK, $type) || in_array(self::TYPE_H_STOCK, $type))) {
 					if (is_array($stroke)) {
 						$stroke = array_values($stroke);
 						if (isset($stroke[ $key + 1 ])) {
@@ -1777,5 +1788,3 @@ class phpGraph
 		}
 	}
 }
-
-?>
