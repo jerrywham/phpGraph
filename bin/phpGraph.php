@@ -245,7 +245,7 @@ class phpGraph
 
 			$options['steps'] = $steps;
 
-			$unitY = ($height / abs(($max + $steps) - $min));
+			$unitY = ($height / abs(($max + $steps) - ($min < 0 ? $min : 0)));
 			$gridV = $gridH = '';
 			$x = $y = '';
 
@@ -279,6 +279,7 @@ class phpGraph
 
 			$return .= $x;
 			$return .= $y;
+
 			if (!$multi) {
 				if (is_array($type) && count($type) == 1) {
 					$type = $type[0];
