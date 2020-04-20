@@ -21,12 +21,21 @@
 # ------------------- END LICENSE BLOCK -------------------
 class phpGraph
 {
-	const TYPE_LINE = 'line';
-	const TYPE_BAR = 'bar';
-	const TYPE_PIE = 'pie';
-	const TYPE_RING = 'ring';
-	const TYPE_STOCK ='stock';
-	const TYPE_H_STOCK ='h-stock';
+	const TYPE_LINE    = 'line';
+	const TYPE_BAR     = 'bar';
+	const TYPE_PIE     = 'pie';
+	const TYPE_RING    = 'ring';
+	const TYPE_STOCK   = 'stock';
+	const TYPE_H_STOCK = 'h-stock';
+
+	const TYPE_AUTHORISED_LIST = [
+		self::TYPE_LINE,
+		self::TYPE_BAR,
+		self::TYPE_PIE,
+		self::TYPE_RING,
+		self::TYPE_STOCK,
+		self::TYPE_H_STOCK,
+	];
 
 	# Basic css style
 	protected $css = '
@@ -91,7 +100,7 @@ class phpGraph
 		}
 	';
 
-	protected $options = [
+	protected $options       = [
 		'width'                => null,// (int) width of grid
 		'height'               => null,// (int) height of grid
 		'paddingTop'           => 10,// (int)
@@ -118,8 +127,6 @@ class phpGraph
 		'transform'            => null,//Transformation of the text of the legend
 		'marginTop'            => 0,//Margin of the legend when use transform
 	];
-	# authorized types
-	protected $types         = [self::TYPE_LINE, self::TYPE_BAR, self::TYPE_PIE, self::TYPE_RING, self::TYPE_STOCK, self::TYPE_H_STOCK];
 	protected $periodOfCache = 1;//A REGLER ET A VERIFIER
 
 	private $colors = [];
@@ -151,7 +158,7 @@ class phpGraph
 		if (is_string($this->options['stroke']) && substr($this->options['stroke'], 0, 1) == '#') {
 			$this->options['stroke'] = [0 => substr($this->options['stroke'], 0, 7)];
 		}
-		if (is_string($this->options['type']) && in_array($this->options['type'], $this->types)) {
+		if (is_string($this->options['type']) && in_array($this->options['type'], self::TYPE_AUTHORISED_LIST)) {
 			$this->options['type'] = [0 => $this->options['type']];
 		}
 	}
