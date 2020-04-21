@@ -27,7 +27,7 @@ By default, it's a line histogram which is displaying.
 To resume :
 
     <?php 
-    include(phpGraph.php);
+    include('bin/phpGraph.php');
   
     $data = array(
       'serie 1' => 10,

@@ -1,0 +1,30 @@
+{
+  "name": "didungar/php-graph",
+  "type": "library",
+  "description": "PHP Graph (from: https://github.com/jerrywham/phpGraph)",
+  "keywords": [
+    "graph",
+    "php",
+    "svg"
+  ],
+  "homepage": "https://github.com/didungar/phpGraph",
+  "license": "libre",
+  "autoload": {
+    "psr-4": {
+      "DidUngar\\": "src/"
+    }
+  },
+  "config": {
+    "bin-dir": "bin"
+  },
+  "authors": [
+    {
+      "name": "jerrywham",
+      "homepage": "https://github.com/jerrywham/phpGraph"
+    },
+    {
+      "name": "didungar",
+      "homepage": "https://github.com/didungar/phpGraph"
+    }
+  ]
+}
