@@ -196,8 +196,6 @@ class phpGraph {
             $this->css = str_replace('/**/', '#'.$id.' ', $this->css);
         }
 
-        $downloadLink = '<p class="downloadSvg"><a href="'.Router::url('accueil/downloadSvg/'.$id).'" onclick="exportToPng(this.href,\''.$id.'\');return false;">'.$txt.'</a></p>';
-
         # Cache
         $nameOfFiles = glob($putInCache.'*.svg');
         if ($putInCache != false && isset($nameOfFiles[0])) {
@@ -1630,7 +1628,7 @@ class phpGraph {
             
             $xh=xslt_create();
             if ($xh === false) {return false;}
-            xslt_set_base($xh,SIG_ROOT);
+            xslt_set_base($xh,$this->SIG_ROOT);
             $arguments=array('/_xml' =>$xml_contents,'/_xsl' => $xsl);
             $result=xslt_process($xh, 'arg:/_xml', 'arg:/_xsl', NULL, $arguments);
             xslt_free($xh);
@@ -1638,7 +1636,7 @@ class phpGraph {
                 $result = str_replace('<?xml version="1.0"?>'."\n", '', $result);
                 $result = str_replace('><',">\n<",$result);
                 file_put_contents($root.$vml, $result);
-                $output = "<div class=\"object\"><object type=\"text/html\" data=\"".Router::url($vml)."\" >";
+                $output = "<div class=\"object\"><object type=\"text/html\" data=\"".$vml."\" >";
                 $output .= "</object></div>\n";
                 $output = $this->wmodeTransparent($output);
                 return $output;
@@ -1717,7 +1715,7 @@ class phpGraph {
             $im->writeImage($this->SIG_ROOT.$outputDir.$outputName.'.jpg');
             $im->clear();
             $im->destroy();
-            echo '<img src="'.Router::url($outputDir.$outputName.'.png').'" alt="'.$outputName.'.png" />';
+            echo '<img src="'.$outputDir.$outputName.'.png'.'" alt="'.$outputName.'.png" />';
         } else {
             $return = array();
             exec(escapeshellcmd('python '.$this->SIG_CORE.'vendors/convertPython/svgtopng --'.$width.' --'.$height.' --o '.$this->SIG_ROOT.$outputDir.$outputName.'.png '.$svg));
