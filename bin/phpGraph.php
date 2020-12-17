@@ -125,6 +125,12 @@ class phpGraph {
     # authorized types
     protected $types = array('line','line','bar','pie','ring','stock','h-stock');
     protected $periodOfCache = 1;//A REGLER ET A VERIFIER
+
+    private $DEBUG = false;
+    private $L_ERROR_FILE_NOT_FOUND = 'ERROR FILE NOT FOUND';
+    private $SIG_ROOT = dirname(__FILE__).DIRECTORY_SEPARATOR;
+    private $SIG_CORE = 'core'.DIRECTORY_SEPARATOR;
+
     
     //protected $colors = array();
 
@@ -139,6 +145,11 @@ class phpGraph {
      * @author  Cyril MAGUIRE
      **/
     public function __construct($width=600,$height=300,$options=array()) {
+        if (isset($options['ROOT']) && is_string($options['ROOT'])) {
+            $this->SIG_ROOT = $options['ROOT'];
+            unset($options['ROOT']);
+        }
+        $this->SIG_CORE = $this->SIG_ROOT.$this->SIG_CORE;
         if (!empty($options)) {
             $this->options = $options;
         }
@@ -1632,10 +1643,15 @@ class phpGraph {
                 $output = $this->wmodeTransparent($output);
                 return $output;
             } else {
+                if ($this->DEBUG == 1) {
+                    libxml_use_internal_errors(true);
+                    echo '<pre style="border: 1px solid #e3af43; background-color: #f8edd5; padding: 10px;color:#111;white-space: pre;white-space: pre-wrap;word-wrap: break-word;">'; print_r(libxml_get_last_error());print_r(libxml_get_errors());echo('</pre>');
+                } else {
                     return false;
+                }
             }
         } else{
-            return L_ERROR_FILE_NOT_FOUND;
+            return $this->L_ERROR_FILE_NOT_FOUND;
         }
     }
 
@@ -1697,14 +1713,14 @@ class phpGraph {
             $im->setImageFormat("jpeg");
             $im->adaptiveResizeImage($width, $height); /*Optional, if you need to resize*/
 
-            $im->writeImage(SIG_ROOT.$outputDir.$outputName.'.png');
-            $im->writeImage(SIG_ROOT.$outputDir.$outputName.'.jpg');
+            $im->writeImage($this->SIG_ROOT.$outputDir.$outputName.'.png');
+            $im->writeImage($this->SIG_ROOT.$outputDir.$outputName.'.jpg');
             $im->clear();
             $im->destroy();
             echo '<img src="'.Router::url($outputDir.$outputName.'.png').'" alt="'.$outputName.'.png" />';
         } else {
             $return = array();
-            exec(escapeshellcmd('python '.SIG_CORE.'vendors/convertPython/svgtopng --'.$width.' --'.$height.' --o '.SIG_ROOT.$outputDir.$outputName.'.png '.$svg));
+            exec(escapeshellcmd('python '.$this->SIG_CORE.'vendors/convertPython/svgtopng --'.$width.' --'.$height.' --o '.$this->SIG_ROOT.$outputDir.$outputName.'.png '.$svg));
         }
     }
 }
